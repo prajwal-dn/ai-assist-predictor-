@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────
+#  Forex Predictor — Central Configuration
+# ─────────────────────────────────────────
+
+# Currency pair to trade (yfinance format)
+pair: "EURUSD=X"
+
+# Candle timeframe: 1h, 4h, 1d
+timeframe: "1h"
+
+# How many hours ahead to predict (1 = next candle)
+forecast_horizon: 4
+
+# How many years of history to download for training
+history_years: 3
+
+# Minimum model confidence to generate a signal (0.0 – 1.0)
+confidence_threshold: 0.58
+
+# Fraction of data held out for testing (never used in training)
+test_size: 0.2
+
+# Random seed for reproducibility
+random_seed: 42
+
+# XGBoost hyperparameters
+model:
+  n_estimators: 300
+  max_depth: 5
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+# Feature engineering settings
+features:
+  rsi_period: 14
+  ma_short: 10
+  ma_long: 50
+  atr_period: 14
+  bb_period: 20       # Bollinger Bands
+  bb_std: 2
+
+# Risk management
+risk:
+  max_risk_per_trade: 0.01   # 1% of account per trade
+  atr_stop_multiplier: 1.5   # stop-loss = 1.5 × ATR
+
+# Paths (relative to project root)
+paths:
+  raw_data:       "data/raw/"
+  processed_data: "data/processed/"
+  labelled_data:  "data/labelled/"
+  models:         "models/"

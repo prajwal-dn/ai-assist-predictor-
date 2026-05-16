@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forex Predictor AI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #f1f5f9;
+    letter-spacing: -0.3px;
+  }
+  .header .pair-badge {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+  }
+
+  .grid-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 600;
+    color: #f1f5f9;
+    line-height: 1;
+  }
+  .metric-sub {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 6px;
+  }
+
+  .signal-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .signal-badge {
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    padding: 12px 32px;
+    border-radius: 12px;
+    min-width: 180px;
+    text-align: center;
+  }
+  .signal-badge.BUY  { background: #052e16; color: #4ade80; border: 2px solid #166534; }
+  .signal-badge.SELL { background: #2d0a0a; color: #f87171; border: 2px solid #7f1d1d; }
+  .signal-badge.FLAT { background: #1e1b0e; color: #fbbf24; border: 2px solid #78350f; }
+  .signal-badge.UNKNOWN { background: #1e293b; color: #64748b; border: 2px solid #334155; }
+
+  .signal-info { flex: 1; padding-left: 32px; }
+  .signal-info .label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+  .signal-info .value { font-size: 18px; font-weight: 500; color: #e2e8f0; margin-bottom: 14px; }
+
+  .prob-row { display: flex; flex-direction: column; gap: 8px; }
+  .prob-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .prob-item .prob-label { width: 60px; color: #64748b; }
+  .prob-bar-bg { flex: 1; height: 8px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+  .prob-bar    { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .prob-bar.up   { background: #22c55e; }
+  .prob-bar.down { background: #ef4444; }
+  .prob-item .prob-num { width: 44px; text-align: right; color: #94a3b8; font-family: monospace; }
+
+  .grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .risk-item {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .risk-item .r-label { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .risk-item .r-value { font-size: 16px; font-weight: 500; color: #e2e8f0; font-family: monospace; }
+
+  .log-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .log-card h3 { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+  .log-list { list-style: none; }
+  .log-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #0f172a;
+    font-size: 13px;
+  }
+  .log-list li:last-child { border-bottom: none; }
+  .log-time  { color: #475569; font-family: monospace; font-size: 12px; }
+  .log-price { color: #94a3b8; font-family: monospace; }
+  .log-sig   { font-weight: 600; font-size: 12px; padding: 2px 10px; border-radius: 6px; }
+  .log-sig.BUY  { background: #052e16; color: #4ade80; }
+  .log-sig.SELL { background: #2d0a0a; color: #f87171; }
+  .log-sig.FLAT { background: #1e1b0e; color: #fbbf24; }
+  .log-conf  { color: #475569; font-size: 12px; font-family: monospace; }
+
+  .refresh-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .refresh-btn:hover  { background: #1d4ed8; }
+  .refresh-btn:active { transform: scale(0.97); }
+  .refresh-btn:disabled { background: #334155; cursor: not-allowed; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .spinner.active { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .auto-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .auto-label { font-size: 13px; color: #64748b; }
+  .auto-select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .countdown {
+    font-size: 13px;
+    color: #475569;
+    font-family: monospace;
+  }
+
+  .error-box {
+    background: #2d0a0a;
+    border: 1px solid #7f1d1d;
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: #f87171;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  .last-updated {
+    font-size: 12px;
+    color: #334155;
+    text-align: center;
+    margin-top: 14px;
+  }
+
+  @media (max-width: 700px) {
+    .grid-top    { grid-template-columns: 1fr 1fr; }
+    .grid-bottom { grid-template-columns: 1fr; }
+    .signal-card { flex-direction: column; gap: 20px; }
+    .signal-info { padding-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="status-dot"></span>Forex Predictor AI</h1>
+  <span class="pair-badge" id="pair-label">EUR/USD · 4h horizon</span>
+</div>
+
+<div class="error-box" id="error-box"></div>
+
+<div class="auto-row">
+  <button class="refresh-btn" id="refresh-btn" onclick="fetchSignal()">
+    <div class="spinner" id="spinner"></div>
+    Get signal now
+  </button>
+  <span class="auto-label">Auto-refresh:</span>
+  <select class="auto-select" id="auto-select" onchange="setAutoRefresh()">
+    <option value="0">Off</option>
+    <option value="60">Every 1 min</option>
+    <option value="300">Every 5 min</option>
+    <option value="900">Every 15 min</option>
+    <option value="3600" selected>Every hour</option>
+  </select>
+  <span class="countdown" id="countdown"></span>
+</div>
+
+<div class="signal-card">
+  <div class="signal-badge UNKNOWN" id="signal-badge">—</div>
+  <div class="signal-info">
+    <div class="label">Current close</div>
+    <div class="value" id="close-val">—</div>
+    <div class="prob-row">
+      <div class="prob-item">
+        <span class="prob-label">UP</span>
+        <div class="prob-bar-bg"><div class="prob-bar up" id="bar-up" style="width:0%"></div></div>
+        <span class="prob-num" id="num-up">—</span>
+      </div>
+      <div class="prob-item">
+        <span class="prob-label">DOWN</span>
+        <div class="prob-bar-bg"><div class="prob-bar down" id="bar-down" style="width:0%"></div></div>
+        <span class="prob-num" id="num-down">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-top">
+  <div class="card">
+    <div class="metric-label">Confidence</div>
+    <div class="metric-value" id="conf-val">—</div>
+    <div class="metric-sub">threshold: 58%</div>
+  </div>
+  <div class="card">
+    <div class="metric-label">Signal time</div>
+    <div class="metric-value" style="font-size:16px;" id="time-val">—</div>
+    <div class="metric-sub">candle timestamp</div>
+  </div>
+  <div class="card">
+    <div class="metric-label">Total signals</div>
+    <div class="metric-value" id="total-sig">0</div>
+    <div class="metric-sub">this session</div>
+  </div>
+  <div class="card">
+    <div class="metric-label">BUY / SELL / FLAT</div>
+    <div class="metric-value" id="sig-counts" style="font-size:18px;">—</div>
+    <div class="metric-sub">signal breakdown</div>
+  </div>
+</div>
+
+<div class="grid-bottom">
+  <div class="card">
+    <div class="metric-label">Risk levels</div>
+    <div class="risk-grid">
+      <div class="risk-item"><div class="r-label">Stop loss</div><div class="r-value" id="sl-val">—</div></div>
+      <div class="risk-item"><div class="r-label">Take profit</div><div class="r-value" id="tp-val">—</div></div>
+      <div class="risk-item"><div class="r-label">Max risk</div><div class="r-value">1% / trade</div></div>
+      <div class="risk-item"><div class="r-label">ATR stop mult</div><div class="r-value">1.5×</div></div>
+    </div>
+  </div>
+
+  <div class="log-card">
+    <h3>Signal history</h3>
+    <ul class="log-list" id="log-list">
+      <li style="color:#334155; font-size:13px;">No signals yet — click "Get signal now"</li>
+    </ul>
+  </div>
+</div>
+
+<div class="last-updated" id="last-updated"></div>
+
+<script>
+let history = [];
+let counts  = { BUY: 0, SELL: 0, FLAT: 0 };
+let autoTimer = null;
+let countdownTimer = null;
+let nextRefresh = 0;
+
+async function fetchSignal() {
+  const btn = document.getElementById('refresh-btn');
+  const sp  = document.getElementById('spinner');
+  const err = document.getElementById('error-box');
+
+  btn.disabled = true;
+  sp.classList.add('active');
+  err.style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/predict');
+    const data = await res.json();
+
+    if (data.error) {
+      err.style.display = 'block';
+      err.textContent = 'Prediction failed. Make sure the model is trained (run train_model.py first). Raw output: ' + data.raw.slice(0, 200);
+      return;
+    }
+
+    updateUI(data);
+    addToHistory(data);
+    document.getElementById('last-updated').textContent =
+      'Last updated: ' + new Date().toLocaleTimeString();
+
+  } catch(e) {
+    err.style.display = 'block';
+    err.textContent = 'Cannot reach server. Make sure app.py is still running.';
+  } finally {
+    btn.disabled = false;
+    sp.classList.remove('active');
+  }
+}
+
+function updateUI(d) {
+  const badge = document.getElementById('signal-badge');
+  badge.textContent = d.signal;
+  badge.className   = 'signal-badge ' + d.signal;
+
+  document.getElementById('close-val').textContent = d.close ? d.close.toFixed(5) : '—';
+  document.getElementById('conf-val').textContent  = d.confidence ? d.confidence.toFixed(1) + '%' : '—';
+  document.getElementById('time-val').textContent  = d.timestamp ? d.timestamp.slice(0,16) : '—';
+
+  const up   = d.prob_up   || 0;
+  const down = d.prob_down || 0;
+  document.getElementById('bar-up').style.width   = up   + '%';
+  document.getElementById('bar-down').style.width = down + '%';
+  document.getElementById('num-up').textContent   = up.toFixed(1)   + '%';
+  document.getElementById('num-down').textContent = down.toFixed(1) + '%';
+
+  document.getElementById('sl-val').textContent = d.stop_loss   ? d.stop_loss.toFixed(5)   : '—';
+  document.getElementById('tp-val').textContent = d.take_profit ? d.take_profit.toFixed(5) : '—';
+}
+
+function addToHistory(d) {
+  history.unshift(d);
+  if (history.length > 20) history.pop();
+
+  if (d.signal in counts) counts[d.signal]++;
+  document.getElementById('total-sig').textContent = history.length;
+  document.getElementById('sig-counts').textContent =
+    counts.BUY + ' / ' + counts.SELL + ' / ' + counts.FLAT;
+
+  const list = document.getElementById('log-list');
+  list.innerHTML = history.map(h => `
+    <li>
+      <span class="log-time">${(h.timestamp||'').slice(0,16)}</span>
+      <span class="log-price">${h.close ? h.close.toFixed(5) : '—'}</span>
+      <span class="log-sig ${h.signal}">${h.signal}</span>
+      <span class="log-conf">${h.confidence ? h.confidence.toFixed(1)+'%' : '—'}</span>
+    </li>
+  `).join('');
+}
+
+function setAutoRefresh() {
+  clearInterval(autoTimer);
+  clearInterval(countdownTimer);
+  document.getElementById('countdown').textContent = '';
+
+  const secs = parseInt(document.getElementById('auto-select').value);
+  if (!secs) return;
+
+  nextRefresh = secs;
+  countdownTimer = setInterval(() => {
+    nextRefresh--;
+    document.getElementById('countdown').textContent =
+      'Next in ' + nextRefresh + 's';
+    if (nextRefresh <= 0) nextRefresh = secs;
+  }, 1000);
+
+  autoTimer = setInterval(() => {
+    fetchSignal();
+    nextRefresh = secs;
+  }, secs * 1000);
+}
+
+setAutoRefresh();
+fetchSignal();
+</script>
+</body>
+</html>
