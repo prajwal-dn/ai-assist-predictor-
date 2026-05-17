@@ -83,8 +83,8 @@ def predict_signal(df: pd.DataFrame, df_daily: pd.DataFrame, model, scaler, feat
     else: signal = "FLAT"
 
     return {
-        "signal": signal, "prob_up": proba_up * 100, "prob_down": proba_down * 100,
-        "confidence": max(proba_up, proba_down) * 100, "timestamp": str(last_time),
+        "signal": signal, "prob_up": proba_up, "prob_down": proba_down,
+        "confidence": max(proba_up, proba_down), "timestamp": str(last_time),
         "close": last_close, "atr": last_atr,
     }
 

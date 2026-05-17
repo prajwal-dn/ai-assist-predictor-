@@ -1,125 +1,83 @@
-# Forex Predictor AI
+# Forex Predictor PRO 📈
 
-A machine learning model that predicts short-term Forex direction (UP / DOWN)
-using XGBoost trained on technical indicators.
+<div align="center">
+  <p><strong>An advanced, AI-powered trading workstation for the Foreign Exchange market.</strong></p>
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.14-blue.svg" alt="Python">
+    <img src="https://img.shields.io/badge/XGBoost-2.0-orange.svg" alt="XGBoost">
+    <img src="https://img.shields.io/badge/Scikit--Learn-1.4-yellow.svg" alt="Scikit-Learn">
+    <img src="https://img.shields.io/badge/UI-Glassmorphism-brightgreen.svg" alt="UI">
+  </p>
+</div>
 
 ---
 
-## Quick Start
+## 🚀 Overview
 
-### 1. Install Python dependencies
+**Forex Predictor PRO** is a professional-grade quantitative trading tool. It leverages state-of-the-art machine learning algorithms and technical analysis to predict short-term price movements in Forex markets. 
+
+By automating the complex analysis of historical data, technical indicators, and multi-timeframe trends, it provides traders with clear, actionable signals (**BUY**, **SELL**, or **FLAT**) alongside calculated risk management protocols.
+
+## ✨ Key Features
+
+### 🧠 Intelligent AI Engine
+*   **XGBoost Classifier:** Utilizes Gradient Boosting to identify complex, non-linear patterns in market volatility and momentum.
+*   **Hyperparameter Auto-Tuning:** Features built-in `RandomizedSearchCV` to automatically discover the absolute optimal mathematical configuration for any specific currency pair.
+*   **Multi-Timeframe Confluence:** The engine cross-references the primary trading timeframe (e.g., 4H) against the macro trend (Daily timeframe) to aggressively filter out false breakouts ("fakeouts").
+
+### 📊 Advanced Quantitative Pipeline
+*   **Automated Data Ingestion:** Seamlessly fetches years of high-fidelity OHLCV data via the Yahoo Finance API.
+*   **Extensive Feature Engineering:** Calculates over 20 unique technical data points per candle, including:
+    *   *Momentum:* RSI, MACD, Stochastic Oscillator
+    *   *Trend:* Short & Long Moving Averages (SMA/EMA)
+    *   *Volatility:* Bollinger Bands, Average True Range (ATR)
+    *   *Price Action:* Candle body percentage, wick length, and volume analysis.
+
+### 💻 Professional Trading Dashboard
+*   **Live Interactive Charting:** Embedded real-time TradingView widget for simultaneous price action analysis.
+*   **Premium Glassmorphism UI:** A sleek, dark-mode aesthetic with live status indicators and dynamic probability gauges.
+*   **Automated Risk Management:** Calculates dynamic **Stop Loss** and **Take Profit** levels based on current market volatility (ATR), enforcing strict risk discipline.
+
+---
+
+## 🛠️ Installation & Setup
+
+### 1. Install Dependencies
+Ensure you have Python 3.9+ installed, then run:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Configure your settings
-Edit `config.yaml`:
-- Change `pair` to your currency pair (e.g. `GBPUSD=X`, `USDJPY=X`)
-- Adjust `forecast_horizon` (how many hours ahead to predict)
-- Adjust `confidence_threshold` (0.65 = only trade when 65%+ confident)
+### 2. Configure Your Strategy
+Edit `config.yaml` to define your trading parameters:
+*   `pair`: The currency pair to trade (e.g., `EURUSD=X`).
+*   `timeframe`: Candle duration (e.g., `1h`, `4h`).
+*   `confidence_threshold`: Minimum probability required to trigger a trade (e.g., `0.58` = 58%).
 
-### 3. Run the full pipeline (first time)
-```bash
-python src/data_loader.py        # Step 1: download historical data
-python src/feature_engineer.py   # Step 2: add technical indicators
-python src/labeller.py           # Step 3: add UP/DOWN labels
-python src/train_model.py        # Step 4: train the model
-python src/backtest.py           # Step 5: see historical performance
-```
-
-### 4. Get a live signal
-```bash
-python src/predict.py
-```
-
-### 5. Retrain monthly (keeps model fresh)
+### 3. Initialize the AI (First Run)
+Run the automated pipeline to download data, engineer features, and train the optimized model:
 ```bash
 python src/retrain.py
 ```
 
----
-
-## Project Structure
-
+### 4. Launch the Dashboard
+Start the local web server to access the trading interface:
+```bash
+python app.py
 ```
-forex-predictor/
-├── config.yaml              ← all settings in one place
-├── requirements.txt         ← python libraries
-│
-├── data/
-│   ├── raw/                 ← downloaded price CSVs
-│   ├── processed/           ← CSVs with indicators added
-│   └── labelled/            ← train.csv and test.csv with UP/DOWN labels
-│
-├── src/
-│   ├── data_loader.py       ← downloads OHLCV data from Yahoo Finance
-│   ├── feature_engineer.py  ← adds RSI, MA, ATR, Bollinger Bands, etc.
-│   ├── labeller.py          ← adds UP/DOWN target column, splits train/test
-│   ├── train_model.py       ← trains XGBoost, evaluates, saves model
-│   ├── predict.py           ← loads model, outputs live BUY/SELL/FLAT signal
-│   ├── backtest.py          ← replays signals on test data, shows P&L
-│   └── retrain.py           ← automates the full pipeline end-to-end
-│
-├── models/
-│   ├── eurusd_xgboost.pkl   ← trained model (created after training)
-│   ├── eurusd_scaler.pkl    ← data normaliser (created after training)
-│   ├── eurusd_feature_cols.pkl
-│   ├── eurusd_trades.csv    ← backtest trade log
-│   ├── eurusd_backtest.png  ← backtest chart
-│   └── retrain_log.json     ← history of retrains
-│
-└── notebooks/
-    ├── 01_data_exploration.ipynb
-    └── 02_model_training.ipynb
-```
+*Then open [http://localhost:5000](http://localhost:5000) in your browser.*
 
 ---
 
-## Understanding the Output
+## 💡 How to Use the Signals
 
-```
-╔══════════════════════════════════════════╗
-║   FOREX PREDICTOR — EURUSD=X            ║
-╠══════════════════════════════════════════╣
-║  Time      : 2024-03-15 14:00           ║
-║  Close     : 1.08542                    ║
-║  Horizon   : 4h ahead                  ║
-╠══════════════════════════════════════════╣
-║  SIGNAL    :   >>>  BUY  <<<           ║
-║  Prob UP   : 71.2%                     ║
-║  Prob DOWN : 28.8%                     ║
-║  Confidence: 71.2%                     ║
-╠══════════════════════════════════════════╣
-║  Stop Loss : 1.08312                   ║
-║  Take Profit: 1.08982                  ║
-║  Max Risk  : 1.0% of account           ║
-╚══════════════════════════════════════════╝
-```
+When a prediction is run, the model returns one of three outcomes:
 
-- **BUY** = model predicts price will be higher in N hours
-- **SELL** = model predicts price will be lower in N hours
-- **FLAT** = model is not confident enough — do not trade
+*   🟢 **BUY:** The model detects a high-probability bullish setup. Look to enter a long position using the provided Stop Loss.
+*   🔴 **SELL:** The model detects a high-probability bearish setup. Look to enter a short position.
+*   🟡 **FLAT:** The market lacks a clear statistical edge or the confidence is below your threshold. Capital preservation is prioritized; do not trade.
 
 ---
 
-## Important Warnings
-
-1. **Past performance does not guarantee future results.**
-2. Always paper trade (test with fake money) before risking real capital.
-3. Never risk more than 1–2% of your account on any single trade.
-4. The model cannot predict news events. Check economic calendar before trading.
-5. Retrain the model every 4–8 weeks to keep it current.
-
----
-
-## Supported Currency Pairs (Yahoo Finance tickers)
-
-| Pair    | Ticker      |
-|---------|-------------|
-| EUR/USD | `EURUSD=X`  |
-| GBP/USD | `GBPUSD=X`  |
-| USD/JPY | `USDJPY=X`  |
-| USD/CHF | `USDCHF=X`  |
-| AUD/USD | `AUDUSD=X`  |
-| USD/CAD | `USDCAD=X`  |
-| NZD/USD | `NZDUSD=X`  |
+## ⚠️ Disclaimer
+**This software is for educational and research purposes only.** Foreign exchange trading carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. The authors and contributors are not responsible for any financial losses incurred while using this tool. Always practice strict risk management and test strategies on a demo account before risking real capital.
