@@ -48,61 +48,29 @@ def load_model_artifacts(model_dir: str, pair: str):
 
 
 def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
-    """
-    Fetch the most recent candles needed to compute all indicators.
-    We need at least `ma_long` + some buffer candles.
-    """
-    ma_long   = cfg["features"]["ma_long"]
-    n_candles = max(200, ma_long * 3)   # enough for all lookback periods
-
-    print(f"[INFO] Fetching last {n_candles} candles for {pair} …")
+    """Fetch candles for a specific timeframe."""
+    print(f"[INFO] Fetching {timeframe} data for {pair}...")
     df = yf.download(
-        tickers  = pair,
-        period   = "60d",
-        interval = timeframe,
-        auto_adjust = True,
-        progress = False,
+        tickers=pair, period="60d", interval=timeframe,
+        auto_adjust=True, progress=False
     )
-
-    if df.empty:
-        raise ValueError("No live data returned. Check your internet connection.")
-
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = df.columns.get_level_values(0)
-
-    df.index.name = "datetime"
-    df.reset_index(inplace=True)
-    df = df[["datetime", "Open", "High", "Low", "Close", "Volume"]].copy()
-    df.columns = ["datetime", "open", "high", "low", "close", "volume"]
-    df.dropna(subset=["close"], inplace=True)
-    df.reset_index(drop=True, inplace=True)
-
-    print(f"[INFO] Fetched {len(df):,} candles. Latest: {df['datetime'].iloc[-1]}")
+    if df.empty: raise ValueError(f"No {timeframe} data returned.")
+    if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
+    df.index.name = "datetime"; df.reset_index(inplace=True)
+    df.columns = [c.lower() for c in df.columns]
     return df
 
 
-def predict_signal(df: pd.DataFrame, model, scaler, feature_cols: list,
+def predict_signal(df: pd.DataFrame, df_daily: pd.DataFrame, model, scaler, feature_cols: list,
                    threshold: float) -> dict:
-    """
-    Run feature engineering on recent data and predict on the LAST row.
-    Returns a dict with signal, probability, and ATR for stop sizing.
-    """
-    # Temporarily suppress the "dropped N rows" print for clean output
-    df_feat = add_features(df, load_config())
+    """Run feature engineering and predict on the LAST row."""
+    df_feat = add_features(df, load_config(), df_daily)
+    if df_feat.empty: raise ValueError("Not enough data for features.")
 
-    if df_feat.empty:
-        raise ValueError("Not enough data to compute all features.")
-
-    # Take the last row (most recent candle)
     last_row   = df_feat.iloc[[-1]]
     last_time  = last_row["datetime"].values[0]
     last_close = last_row["close"].values[0]
     last_atr   = last_row["atr"].values[0]
-
-    # Check all required features are present
-    missing = [c for c in feature_cols if c not in last_row.columns]
-    if missing:
-        raise ValueError(f"Missing feature columns: {missing}")
 
     X = last_row[feature_cols].values
     X = scaler.transform(X)
@@ -110,21 +78,14 @@ def predict_signal(df: pd.DataFrame, model, scaler, feature_cols: list,
     proba_up   = model.predict_proba(X)[0][1]
     proba_down = 1 - proba_up
 
-    if proba_up >= threshold:
-        signal = "BUY"
-    elif proba_down >= threshold:
-        signal = "SELL"
-    else:
-        signal = "FLAT"
+    if proba_up >= threshold: signal = "BUY"
+    elif proba_down >= threshold: signal = "SELL"
+    else: signal = "FLAT"
 
     return {
-        "signal":      signal,
-        "prob_up":     proba_up,
-        "prob_down":   proba_down,
-        "confidence":  max(proba_up, proba_down),
-        "timestamp":   str(last_time),
-        "close":       last_close,
-        "atr":         last_atr,
+        "signal": signal, "prob_up": proba_up * 100, "prob_down": proba_down * 100,
+        "confidence": max(proba_up, proba_down) * 100, "timestamp": str(last_time),
+        "close": last_close, "atr": last_atr,
     }
 
 
@@ -170,19 +131,27 @@ def print_signal(result: dict, cfg: dict):
 
 
 def main():
-    cfg       = load_config()
-    pair      = cfg["pair"]
-    pair_key  = pair.replace("=X", "").lower()
+    cfg = load_config()
+    pair = cfg["pair"]
+    pair_key = pair.replace("=X", "").lower()
     timeframe = cfg["timeframe"]
-    threshold = cfg["confidence_threshold"]
 
     model, scaler, feature_cols = load_model_artifacts(
         cfg["paths"]["models"], pair_key
     )
 
+    # Fetch primary timeframe
     df = fetch_recent_data(pair, timeframe, cfg)
+    
+    # Fetch Daily trend context
+    df_daily = None
+    if timeframe != "1d":
+        try:
+            df_daily = fetch_recent_data(pair, "1d", cfg)
+        except Exception as e:
+            print(f"[WARNING] Could not fetch daily trend: {e}")
 
-    result = predict_signal(df, model, scaler, feature_cols, threshold)
+    result = predict_signal(df, df_daily, model, scaler, feature_cols, cfg["confidence_threshold"])
 
     print_signal(result, cfg)
     return result

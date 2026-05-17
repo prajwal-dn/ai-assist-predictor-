@@ -63,24 +63,41 @@ def train(train_df: pd.DataFrame, cfg: dict):
     scaler  = StandardScaler()
     X_train = scaler.fit_transform(X_train)
 
-    # XGBoost model
-    m = cfg["model"]
-    model = XGBClassifier(
-        n_estimators      = m["n_estimators"],
-        max_depth         = m["max_depth"],
-        learning_rate     = m["learning_rate"],
-        subsample         = m["subsample"],
-        colsample_bytree  = m["colsample_bytree"],
+    # Hyperparameter search space
+    param_dist = {
+        "n_estimators":     [100, 200, 300, 500],
+        "max_depth":        [3, 5, 7, 9],
+        "learning_rate":    [0.01, 0.05, 0.1],
+        "subsample":        [0.7, 0.8, 0.9],
+        "colsample_bytree": [0.7, 0.8, 0.9],
+        "gamma":            [0, 0.1, 0.2],
+    }
+
+    from sklearn.model_selection import RandomizedSearchCV
+
+    base_model = XGBClassifier(
         random_state      = cfg["random_seed"],
         eval_metric       = "logloss",
         use_label_encoder = False,
-        n_jobs            = -1,
+        n_jobs            = -1
     )
 
-    print(f"[INFO] Training XGBoost on {len(X_train):,} samples "
-          f"with {len(feature_cols)} features …")
-    model.fit(X_train, y_train)
-    print("[INFO] Training complete.")
+    print(f"[INFO] Starting hyperparameter tuning (Search CV) on {len(X_train):,} samples...")
+    search = RandomizedSearchCV(
+        base_model, 
+        param_distributions=param_dist, 
+        n_iter=15, 
+        cv=3, 
+        scoring="accuracy", 
+        verbose=1,
+        random_state=cfg["random_seed"]
+    )
+    
+    search.fit(X_train, y_train)
+    
+    model = search.best_estimator_
+    print(f"[INFO] Best Parameters: {search.best_params_}")
+    print("[INFO] Training complete with optimized parameters.")
 
     return model, scaler, feature_cols
 
@@ -118,14 +135,14 @@ def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
                                         zero_division=0),
     }
 
-    print("\n─── Evaluation Results ───────────────────────────────────────")
+    print("\n--- Evaluation Results ---")
     print(f"  All-row accuracy (50% threshold) : {metrics['all_accuracy']:.3f}")
     print(f"  Rows above confidence threshold  : {confident_pct:.1f}%")
     print(f"  Accuracy on confident rows       : {metrics['confident_accuracy']:.3f}")
     print(f"  Precision                        : {metrics['precision']:.3f}")
     print(f"  Recall                           : {metrics['recall']:.3f}")
     print(f"  F1 Score                         : {metrics['f1']:.3f}")
-    print("──────────────────────────────────────────────────────────────\n")
+    print("----------------------------------\n")
     print(classification_report(y_true_confident, y_pred_confident,
                                  target_names=["DOWN", "UP"], zero_division=0))
 
@@ -142,9 +159,9 @@ def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str):
     joblib.dump(scaler,       scaler_path)
     joblib.dump(feature_cols, cols_path)
 
-    print(f"[INFO] Model  saved → {model_path}")
-    print(f"[INFO] Scaler saved → {scaler_path}")
-    print(f"[INFO] Cols   saved → {cols_path}")
+    print(f"[INFO] Model  saved -> {model_path}")
+    print(f"[INFO] Scaler saved -> {scaler_path}")
+    print(f"[INFO] Cols   saved -> {cols_path}")
 
 
 def main():

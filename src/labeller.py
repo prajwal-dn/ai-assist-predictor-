@@ -64,8 +64,8 @@ def split_and_save(df: pd.DataFrame, output_dir: str, pair: str,
     train_df.to_csv(train_file, index=False)
     test_df.to_csv(test_file, index=False)
 
-    print(f"[INFO] Train set: {len(train_df):,} rows → {train_file}")
-    print(f"[INFO] Test  set: {len(test_df):,} rows → {test_file}")
+    print(f"[INFO] Train set: {len(train_df):,} rows -> {train_file}")
+    print(f"[INFO] Test  set: {len(test_df):,} rows -> {test_file}")
     return train_df, test_df
 
 

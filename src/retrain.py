@@ -76,7 +76,7 @@ def check_accuracy_drop(cfg: dict, pair: str, min_accuracy: float = 0.52):
 
     if acc < min_accuracy:
         print(
-            f"\n⚠️  WARNING: Accuracy {acc:.3f} is below minimum threshold {min_accuracy}.\n"
+            f"\n[WARNING] Accuracy {acc:.3f} is below minimum threshold {min_accuracy}.\n"
             "    Market conditions may have changed significantly.\n"
             "    Consider reviewing features or pausing live signals until investigated."
         )
@@ -102,7 +102,7 @@ def save_retrain_log(cfg: dict, pair: str):
     with open(log_path, "w", encoding="utf-8") as f:
         json.dump(log, f, indent=2)
 
-    print(f"[INFO] Retrain log updated → {log_path}")
+    print(f"[INFO] Retrain log updated -> {log_path}")
 
 
 def main():
@@ -111,7 +111,7 @@ def main():
 
     src_dir = os.path.join(os.path.dirname(__file__))
 
-    print(f"\n🔄  Starting retrain pipeline for {cfg['pair']} at {datetime.utcnow():%Y-%m-%d %H:%M} UTC")
+    print(f"\n--- Starting retrain pipeline for {cfg['pair']} at {datetime.utcnow():%Y-%m-%d %H:%M} UTC ---")
 
     run_step(os.path.join(src_dir, "data_loader.py"),     "1/4 Download fresh data")
     run_step(os.path.join(src_dir, "feature_engineer.py"),"2/4 Engineer features")
@@ -121,7 +121,7 @@ def main():
     check_accuracy_drop(cfg, pair_key)
     save_retrain_log(cfg, pair_key)
 
-    print(f"\n✅  Retrain pipeline complete at {datetime.utcnow():%Y-%m-%d %H:%M} UTC")
+    print(f"\n--- Retrain pipeline complete at {datetime.utcnow():%Y-%m-%d %H:%M} UTC ---")
     print("[DONE] retrain complete.")
 
 

@@ -109,8 +109,16 @@ def main():
     timeframe  = cfg["timeframe"]
     output_dir = cfg["paths"]["raw_data"]
 
+    # Download primary timeframe
     df = download_data(pair, years, timeframe)
     save_data(df, output_dir, pair, timeframe)
+
+    # Download DAILY timeframe for trend confirmation (if not already 1d)
+    if timeframe != "1d":
+        print(f"\n[INFO] Downloading Daily (1d) data for trend context...")
+        df_daily = download_data(pair, years, "1d")
+        save_data(df_daily, output_dir, pair, "1d")
+
     print("[DONE] data_loader complete.")
 
 
