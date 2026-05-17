@@ -12,7 +12,7 @@ import os, sys, json, subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
-PORT = 5000
+PORT = int(os.environ.get("PORT", 7860))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
