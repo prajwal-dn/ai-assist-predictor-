@@ -1,3 +1,13 @@
+---
+title: AI Forex Predictor PRO
+emoji: 📈
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # Forex Predictor PRO 📈
 
 <div align="center">
@@ -48,11 +58,17 @@ Ensure you have Python 3.9+ installed, then run:
 pip install -r requirements.txt
 ```
 
-### 2. Configure Your Strategy
-Edit `config.yaml` to define your trading parameters:
-*   `pair`: The currency pair to trade (e.g., `EURUSD=X`).
-*   `timeframe`: Candle duration (e.g., `1h`, `4h`).
-*   `confidence_threshold`: Minimum probability required to trigger a trade (e.g., `0.58` = 58%).
+### 2. Configure Your Strategy & API Key
+Edit `config.yaml` to define your trading parameters. For reliable live data without rate limits, you must add a free API key:
+
+1. **Get an API Key:** Sign up for a free account at [TwelveData.com](https://twelvedata.com/) and copy your API key.
+2. **Update Config:** Paste it into `config.yaml`:
+   ```yaml
+   twelvedata_api_key: "YOUR_API_KEY_HERE"
+   pair: "EURUSD=X"
+   timeframe: "1h"
+   confidence_threshold: 0.58
+   ```
 
 ### 3. Initialize the AI (First Run)
 Run the automated pipeline to download data, engineer features, and train the optimized model:

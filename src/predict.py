@@ -47,14 +47,46 @@ def load_model_artifacts(model_dir: str, pair: str):
     return model, scaler, feature_cols
 
 
+import requests
+
 def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
-    """Fetch candles for a specific timeframe."""
+    """Fetch candles. Uses TwelveData if API key is provided, else falls back to yfinance."""
     print(f"[INFO] Fetching {timeframe} data for {pair}...")
+    
+    api_key = cfg.get("twelvedata_api_key", "")
+    
+    if api_key:
+        # Use TwelveData (Professional Permanent Fix)
+        # Convert Yahoo pair (EURUSD=X) to TwelveData format (EUR/USD)
+        td_pair = pair.replace("=X", "")
+        if len(td_pair) == 6: td_pair = f"{td_pair[:3]}/{td_pair[3:]}"
+        
+        url = f"https://api.twelvedata.com/time_series?symbol={td_pair}&interval={timeframe}&outputsize=200&apikey={api_key}"
+        res = requests.get(url).json()
+        
+        if "values" not in res:
+            raise ValueError(f"TwelveData API Error: {res.get('message', 'Unknown error')}")
+            
+        df = pd.DataFrame(res["values"])
+        df["datetime"] = pd.to_datetime(df["datetime"])
+        for col in ["open", "high", "low", "close", "volume"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            
+        # TwelveData returns newest to oldest; we need oldest to newest
+        df = df.iloc[::-1].reset_index(drop=True)
+        return df
+
+    # Fallback to yfinance (Free but heavily rate-limited by Hugging Face IPs)
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    })
+    
     df = yf.download(
         tickers=pair, period="60d", interval=timeframe,
-        auto_adjust=True, progress=False
+        auto_adjust=True, progress=False, session=session
     )
-    if df.empty: raise ValueError(f"No {timeframe} data returned.")
+    if df.empty: raise ValueError(f"No {timeframe} data returned from Yahoo Finance.")
     if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
     df.index.name = "datetime"; df.reset_index(inplace=True)
     df.columns = [c.lower() for c in df.columns]

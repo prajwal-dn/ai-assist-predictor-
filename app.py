@@ -20,6 +20,7 @@ def run_predict():
     """Run predict.py and return structured result."""
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONWARNINGS"] = "ignore"
     result = subprocess.run(
         [sys.executable, os.path.join(BASE_DIR, "src", "predict.py")],
         capture_output=True, text=True, encoding="utf-8", cwd=BASE_DIR, env=env

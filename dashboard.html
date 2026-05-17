@@ -169,7 +169,11 @@
     border-radius: 10px;
     margin-bottom: 16px;
     display: none;
-    font-size: 13px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
   }
 </style>
 </head>
@@ -304,7 +308,7 @@ async function fetchSignal() {
 
     if (data.error) {
       err.style.display = 'block';
-      err.textContent = "ENGINE ERROR: " + data.raw.slice(0,100);
+      err.textContent = "ENGINE ERROR:\n" + data.raw;
       return;
     }
 

@@ -8,6 +8,10 @@ pair: "EURUSD=X"
 # Candle timeframe: 1h, 4h, 1d
 timeframe: "1h"
 
+# API keys for permanent reliable data (yfinance is free but rate-limited)
+# Get a free key at: https://twelvedata.com/
+twelvedata_api_key: ""
+
 # How many hours ahead to predict (1 = next candle)
 forecast_horizon: 4
 
