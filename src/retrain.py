@@ -81,7 +81,7 @@ def check_accuracy_drop(cfg: dict, pair: str, min_accuracy: float = 0.52):
             "    Consider reviewing features or pausing live signals until investigated."
         )
     else:
-        print(f"[OK] Accuracy {acc:.3f} is acceptable (≥ {min_accuracy}).")
+        print(f"[OK] Accuracy {acc:.3f} is acceptable (>= {min_accuracy}).")
 
 
 def save_retrain_log(cfg: dict, pair: str):

@@ -25,7 +25,10 @@ wheels/
 data/raw/
 data/processed/
 data/labelled/
-models/*.pkl
+models/*
+!models/*_xgboost.pkl
+!models/*_scaler.pkl
+!models/*_feature_cols.pkl
 models/*.csv
 models/*.png
 retrain_log.json

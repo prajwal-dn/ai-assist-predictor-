@@ -3,14 +3,14 @@
 # ─────────────────────────────────────────
 
 # Currency pair to trade (yfinance format)
-pair: "EURUSD=X"
+pair: "GBPUSD=X"
 
 # Candle timeframe: 1h, 4h, 1d
 timeframe: "1h"
 
 # API keys for permanent reliable data (yfinance is free but rate-limited)
-# Get a free key at: https://twelvedata.com/
-twelvedata_api_key: "c43f8f2b7ebc4b7f90f86a58245dfbf8"
+# For Hugging Face Spaces, add this as a Secret named TWELVEDATA_API_KEY.
+twelvedata_api_key: ""
 
 # How many hours ahead to predict (1 = next candle)
 forecast_horizon: 4
@@ -19,7 +19,7 @@ forecast_horizon: 4
 history_years: 3
 
 # Minimum model confidence to generate a signal (0.0 – 1.0)
-confidence_threshold: 0.58
+confidence_threshold: 0.55
 
 # Fraction of data held out for testing (never used in training)
 test_size: 0.2

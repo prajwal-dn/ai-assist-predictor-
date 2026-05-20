@@ -67,16 +67,16 @@ pip install -r requirements.txt
 ```
 
 ### 2. Configure Your Strategy & API Key
-Edit `config.yaml` to define your trading parameters. For reliable live data without rate limits, you must add a free API key:
+Edit `config.yaml` to define your trading parameters. For reliable live data without rate limits, add a free TwelveData API key.
 
 1. **Get an API Key:** Sign up for a free account at [TwelveData.com](https://twelvedata.com/) and copy your API key.
-2. **Update Config:** Paste it into `config.yaml`:
+2. **Local use:** Either set `TWELVEDATA_API_KEY` in your environment, or paste it into `config.yaml` while keeping that file private:
    ```yaml
-   twelvedata_api_key: "YOUR_API_KEY_HERE"
    pair: "EURUSD=X"
    timeframe: "1h"
-   confidence_threshold: 0.58
+   confidence_threshold: 0.65
    ```
+3. **Hugging Face Spaces:** Add it as a Space Secret named `TWELVEDATA_API_KEY` instead of committing it to the repo.
 
 ### 3. Initialize the AI (First Run)
 Run the automated pipeline to download data, engineer features, and train the optimized model:

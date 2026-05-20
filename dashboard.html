@@ -120,6 +120,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
   }
   .btn-primary {
     background: var(--accent);
@@ -134,6 +135,29 @@
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4); }
   .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-train {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--flat);
+    border: 1px solid rgba(245,158,11,0.3);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+  }
+  .btn-train:hover { background: rgba(245,158,11,0.25); }
+  .btn-train:disabled { opacity: 0.5; cursor: not-allowed; }
+  .no-model-badge {
+    background: rgba(239,68,68,0.1);
+    color: var(--sell);
+    border: 1px solid rgba(239,68,68,0.3);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    display: none;
+  }
 
   select {
     background: var(--card-bg);
@@ -143,6 +167,21 @@
     border-radius: 10px;
     font-size: 14px;
     outline: none;
+  }
+
+  #train-log {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+    max-height: 120px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    display: none;
+    white-space: pre-wrap;
   }
 
   /* History List */
@@ -184,13 +223,27 @@
     <h1>FOREX PREDICTOR <span style="font-weight:300; opacity:0.5">PRO</span></h1>
     <div class="status-pill"><div class="dot"></div> LIVE AI AGENT</div>
   </div>
-  <div class="pair-badge" id="pair-display" style="font-family:'JetBrains Mono'; color:var(--text-dim)">EURUSD · 4H HORIZON</div>
+  <div class="pair-badge" id="pair-display" style="font-family:'JetBrains Mono'; color:var(--text-dim)">LOADING MARKET</div>
 </div>
 
 <div id="error-box"></div>
 
 <div class="control-bar">
+  <select id="pair-select" onchange="onPairChange()" style="font-family:'JetBrains Mono'; font-weight:600;">
+    <option value="EURUSD=X">EUR/USD</option>
+    <option value="GBPUSD=X">GBP/USD</option>
+    <option value="USDJPY=X">USD/JPY</option>
+    <option value="USDCHF=X">USD/CHF</option>
+    <option value="AUDUSD=X">AUD/USD</option>
+    <option value="USDCAD=X">USD/CAD</option>
+    <option value="NZDUSD=X">NZD/USD</option>
+    <option value="EURGBP=X">EUR/GBP</option>
+    <option value="EURJPY=X">EUR/JPY</option>
+    <option value="GBPJPY=X">GBP/JPY</option>
+  </select>
   <button class="btn-primary" id="refresh-btn" onclick="fetchSignal()">RUN PREDICTION</button>
+  <button class="btn-train" id="train-btn" onclick="trainModel()">⚡ TRAIN MODEL</button>
+  <span class="no-model-badge" id="no-model-badge">⚠ No model for this pair</span>
   <select id="auto-select" onchange="setAutoRefresh()">
     <option value="0">Auto-Refresh: Off</option>
     <option value="300">Every 5 Min</option>
@@ -198,12 +251,14 @@
   </select>
   <span id="countdown" style="font-size:12px; color:var(--text-dim); font-family:'JetBrains Mono'"></span>
 </div>
+<div id="train-log"></div>
 
 <div class="main-grid">
   <!-- Left Side -->
   <div class="side-panel">
     <div class="glass signal-box">
       <div class="signal-label">Current Analysis</div>
+      <div class="signal-label" id="model-market-label" style="font-size:10px; margin-bottom:18px">MODEL MARKET</div>
       <div class="signal-value UNKNOWN" id="signal-val">—</div>
       
       <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim)">
@@ -245,32 +300,13 @@
   <!-- Right Side -->
   <div class="content-panel">
     <div class="glass chart-container">
-      <!-- TradingView Widget BEGIN -->
-      <div class="tradingview-widget-container" style="height:100%;width:100%">
-        <div id="tradingview_widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        <script type="text/javascript">
-        function loadChart(symbol = "FX:EURUSD") {
-          new TradingView.widget({
-            "width": "100%",
-            "height": "100%",
-            "symbol": symbol,
-            "interval": "240",
-            "timezone": "Etc/UTC",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "hide_side_toolbar": false,
-            "allow_symbol_change": true,
-            "container_id": "tradingview_widget"
-          });
-        }
-        loadChart();
-        </script>
-      </div>
-      <!-- TradingView Widget END -->
+      <!-- TradingView Chart via iframe (avoids re-init popup bug) -->
+      <iframe id="tv-chart"
+        src="https://www.tradingview.com/widgetembed/?symbol=FX%3AEURUSD&interval=60&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0&frameElementId=tv-chart"
+        style="width:100%;height:100%;border:none;"
+        allowtransparency="true"
+        scrolling="no">
+      </iframe>
     </div>
 
     <div class="metrics-grid">
@@ -293,11 +329,139 @@
 <script>
 let history = [];
 let autoTimer = null;
-let nextRefresh = 0;
+let trainPollTimer = null;
+
+function loadChart(symbol = "FX:EURUSD", interval = "60") {
+  const encoded = encodeURIComponent(symbol);
+  document.getElementById('tv-chart').src =
+    `https://www.tradingview.com/widgetembed/?symbol=${encoded}&interval=${interval}&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0`;
+}
+
+async function loadAppConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const cfg = await res.json();
+    document.getElementById('pair-display').textContent =
+      `AI MODEL: ${cfg.pair_code} - ${cfg.timeframe.toUpperCase()} DATA - ${cfg.forecast_horizon}H HORIZON`;
+    document.getElementById('model-market-label').textContent = `${cfg.pair_code} AI MODEL`;
+    loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
+
+    // Sync pair selector
+    const sel = document.getElementById('pair-select');
+    if (sel) sel.value = cfg.pair;
+
+    // Show/hide no-model badge
+    const badge = document.getElementById('no-model-badge');
+    badge.style.display = cfg.model_exists ? 'none' : 'inline-block';
+
+    return cfg;
+  } catch(e) {
+    document.getElementById('pair-display').textContent = 'CONFIG UNAVAILABLE';
+    loadChart();
+  }
+}
+
+async function onPairChange() {
+  const pair = document.getElementById('pair-select').value;
+  const err  = document.getElementById('error-box');
+  err.style.display = 'none';
+
+  try {
+    await fetch('/api/set_pair', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pair})
+    });
+    const cfg = await loadAppConfig();
+    const refreshBtn = document.getElementById('refresh-btn');
+    if (cfg && cfg.model_exists) {
+      refreshBtn.disabled = false;
+      fetchSignal();
+    } else {
+      // No model — disable predict button and reset signal display
+      refreshBtn.disabled = true;
+      const val = document.getElementById('signal-val');
+      val.textContent = '—';
+      val.className = 'signal-value UNKNOWN';
+      document.getElementById('conf-pct').textContent = '0%';
+      document.getElementById('conf-fill').style.width = '0%';
+      document.getElementById('close-val').textContent = '0.00000';
+      document.getElementById('sl-val').textContent = '—';
+      document.getElementById('tp-val').textContent = '—';
+      document.getElementById('prob-up').textContent = '0.0%';
+      document.getElementById('prob-down').textContent = '0.0%';
+      document.getElementById('time-val').textContent = '—';
+    }
+  } catch(e) {
+    err.style.display = 'block';
+    err.textContent = 'Failed to switch pair.';
+  }
+}
+
+async function trainModel() {
+  const btn = document.getElementById('train-btn');
+  const err = document.getElementById('error-box');
+  btn.disabled = true;
+  btn.textContent = '⏳ TRAINING...';
+  err.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/train', {method:'POST'});
+    const d = await res.json();
+    if (d.error) {
+      err.style.display = 'block';
+      err.textContent = 'Training error: ' + d.error;
+      btn.disabled = false;
+      btn.textContent = '⚡ TRAIN MODEL';
+      return;
+    }
+    pollTrainStatus();
+  } catch(e) {
+    err.style.display = 'block';
+    err.textContent = 'Failed to start training. Is app.py running?';
+    btn.disabled = false;
+    btn.textContent = '⚡ TRAIN MODEL';
+  }
+}
+
+function pollTrainStatus() {
+  clearInterval(trainPollTimer);
+  trainPollTimer = setInterval(async () => {
+    try {
+      const res  = await fetch('/api/train_status');
+      const data = await res.json();
+      const btn  = document.getElementById('train-btn');
+      const err  = document.getElementById('error-box');
+
+      if (!data.running) {
+        clearInterval(trainPollTimer);
+        btn.disabled = false;
+        btn.textContent = '⚡ TRAIN MODEL';
+        if (data.success) {
+          await loadAppConfig();
+          document.getElementById('refresh-btn').disabled = false;
+          fetchSignal();
+        } else {
+          err.style.display = 'block';
+          err.textContent = '❌ Training failed. Check the terminal for details.';
+        }
+      }
+    } catch(e) {}
+  }, 2000);
+}
 
 async function fetchSignal() {
   const btn = document.getElementById('refresh-btn');
   const err = document.getElementById('error-box');
+  // Guard: check model exists before running prediction
+  try {
+    const cfg = await (await fetch('/api/config')).json();
+    if (!cfg.model_exists) {
+      err.style.display = 'block';
+      err.textContent = `No trained model for ${cfg.pair_code}. Click ⚡ TRAIN MODEL first.`;
+      return;
+    }
+  } catch(e) {}
   btn.disabled = true;
   btn.textContent = "ANALYZING...";
   err.style.display = 'none';
@@ -331,10 +495,8 @@ function updateUI(d) {
   document.getElementById('conf-pct').textContent = d.confidence.toFixed(1) + '%';
   document.getElementById('conf-fill').style.width = d.confidence + '%';
   document.getElementById('close-val').textContent = d.close.toFixed(5);
-  
   document.getElementById('sl-val').textContent = d.stop_loss ? d.stop_loss.toFixed(5) : '—';
   document.getElementById('tp-val').textContent = d.take_profit ? d.take_profit.toFixed(5) : '—';
-  
   document.getElementById('prob-up').textContent = d.prob_up.toFixed(1) + '%';
   document.getElementById('prob-down').textContent = d.prob_down.toFixed(1) + '%';
   document.getElementById('time-val').textContent = d.timestamp.slice(0,16);
@@ -343,7 +505,6 @@ function updateUI(d) {
 function addToHistory(d) {
   history.unshift(d);
   if (history.length > 10) history.pop();
-  
   const list = document.getElementById('history-list');
   list.innerHTML = history.map(h => `
     <div class="history-item">
@@ -366,8 +527,11 @@ function setAutoRefresh() {
   autoTimer = setInterval(fetchSignal, secs * 1000);
 }
 
-setAutoRefresh();
-fetchSignal();
+loadAppConfig().then(cfg => {
+  setAutoRefresh();
+  // Only predict on load if a model exists for the current pair
+  if (cfg && cfg.model_exists) fetchSignal();
+});
 </script>
 
 </body>
