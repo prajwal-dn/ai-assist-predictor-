@@ -448,7 +448,7 @@ function pollTrainStatus() {
           fetchSignal();
         } else {
           err.style.display = 'block';
-          err.textContent = '❌ Training failed:\n\n' + (data.log || 'No log details available.');
+          err.textContent = '❌ Training failed. Check the terminal for details.';
         }
       }
     } catch(e) {}
