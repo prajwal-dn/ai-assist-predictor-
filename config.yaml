@@ -3,7 +3,7 @@
 # ─────────────────────────────────────────
 
 # Currency pair to trade (yfinance format)
-pair: "GBPUSD=X"
+pair: "SOL-USD"
 
 # Candle timeframe: 1h, 4h, 1d
 timeframe: "1h"

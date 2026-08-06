@@ -143,31 +143,16 @@ def run_predict():
     return data
 
 
-def _run_train_background(pair: str):
-    """Run the full retrain pipeline in a background thread."""
-    global _train_status
-    with _train_lock:
-        _train_status = {"running": True, "log": f"Starting pipeline for {pair}...\n", "success": None}
-
-    env = os.environ.copy()
-    env["PYTHONIOENCODING"] = "utf-8"
-    env["PYTHONWARNINGS"] = "ignore"
-
-    result = subprocess.run(
-        [sys.executable, os.path.join(BASE_DIR, "src", "retrain.py")],
-        capture_output=True, text=True, encoding="utf-8", cwd=BASE_DIR, env=env
-    )
-    output = (result.stdout or "") + (result.stderr or "")
-    success = result.returncode == 0
-
-    with _train_lock:
-        _train_status = {"running": False, "log": output, "success": success}
-
-    # Clear prediction cache for this pair so next predict uses fresh model
-    pair_key = pair.replace("=X", "").lower()
-    for key in list(_prediction_cache.keys()):
-        if key.startswith(pair_key):
-            del _prediction_cache[key]
+def load_trained_pairs():
+    with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    model_dir = cfg.get("paths", {}).get("models", "models/")
+    pairs = []
+    if os.path.exists(model_dir):
+        for file in os.listdir(model_dir):
+            if file.endswith("_xgboost.pkl"):
+                pairs.append(file.replace("_xgboost.pkl", ""))
+    return {"trained_pairs": pairs}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -206,9 +191,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/config":
             self.send_json(load_app_config())
 
-        elif path == "/api/train_status":
-            with _train_lock:
-                self.send_json(dict(_train_status))
+        elif path == "/api/models":
+            self.send_json(load_trained_pairs())
 
         else:
             self.send_response(404)
@@ -234,16 +218,6 @@ class Handler(BaseHTTPRequestHandler):
             save_pair_to_config(new_pair)
             cfg = load_app_config()
             self.send_json({"ok": True, "config": cfg})
-
-        elif path == "/api/train":
-            with _train_lock:
-                if _train_status.get("running"):
-                    self.send_json({"error": "Training already in progress"}, 409)
-                    return
-            cfg = load_app_config()
-            t = threading.Thread(target=_run_train_background, args=(cfg["pair"],), daemon=True)
-            t.start()
-            self.send_json({"ok": True, "message": f"Training started for {cfg['pair']}"})
 
         else:
             self.send_response(404)

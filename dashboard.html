@@ -50,7 +50,7 @@
   }
   
   .logo-group { display: flex; align-items: center; gap: 12px; }
-  .logo-group h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-group h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
   
   .status-pill {
     background: rgba(34, 197, 94, 0.1);
@@ -135,29 +135,7 @@
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4); }
   .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-train {
-    background: rgba(245, 158, 11, 0.15);
-    color: var(--flat);
-    border: 1px solid rgba(245,158,11,0.3);
-    padding: 10px 20px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 13px;
-  }
-  .btn-train:hover { background: rgba(245,158,11,0.25); }
-  .btn-train:disabled { opacity: 0.5; cursor: not-allowed; }
-  .no-model-badge {
-    background: rgba(239,68,68,0.1);
-    color: var(--sell);
-    border: 1px solid rgba(239,68,68,0.3);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    display: none;
-  }
+
 
   select {
     background: var(--card-bg);
@@ -169,20 +147,7 @@
     outline: none;
   }
 
-  #train-log {
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 11px;
-    font-family: 'JetBrains Mono', monospace;
-    color: var(--text-dim);
-    max-height: 120px;
-    overflow-y: auto;
-    margin-bottom: 16px;
-    display: none;
-    white-space: pre-wrap;
-  }
+
 
   /* History List */
   .history-list { list-style: none; margin-top: 10px; }
@@ -230,25 +195,8 @@
 
 <div class="control-bar">
   <select id="pair-select" onchange="onPairChange()" style="font-family:'JetBrains Mono'; font-weight:600;">
-    <option value="EURUSD=X">EUR/USD</option>
-    <option value="GBPUSD=X">GBP/USD</option>
-    <option value="USDJPY=X">USD/JPY</option>
-    <option value="USDCHF=X">USD/CHF</option>
-    <option value="AUDUSD=X">AUD/USD</option>
-    <option value="USDCAD=X">USD/CAD</option>
-    <option value="NZDUSD=X">NZD/USD</option>
-    <option value="EURGBP=X">EUR/GBP</option>
-    <option value="EURJPY=X">EUR/JPY</option>
-    <option value="GBPJPY=X">GBP/JPY</option>
-    <option value="INRUSD=X">INR/USD</option>
-    <option value="USDINR=X">USD/INR</option>
-    <option value="BTC-USD">BTC/USD (Crypto)</option>
-    <option value="ETH-USD">ETH/USD (Crypto)</option>
-    <option value="SOL-USD">SOL/USD (Crypto)</option>
   </select>
   <button class="btn-primary" id="refresh-btn" onclick="fetchSignal()">RUN PREDICTION</button>
-  <button class="btn-train" id="train-btn" onclick="trainModel()">⚡ TRAIN MODEL</button>
-  <span class="no-model-badge" id="no-model-badge">⚠ No model for this pair</span>
   <select id="auto-select" onchange="setAutoRefresh()">
     <option value="0">Auto-Refresh: Off</option>
     <option value="300">Every 5 Min</option>
@@ -256,7 +204,7 @@
   </select>
   <span id="countdown" style="font-size:12px; color:var(--text-dim); font-family:'JetBrains Mono'"></span>
 </div>
-<div id="train-log"></div>
+
 
 <div class="main-grid">
   <!-- Left Side -->
@@ -334,7 +282,6 @@
 <script>
 let history = [];
 let autoTimer = null;
-let trainPollTimer = null;
 
 function loadChart(symbol = "FX:EURUSD", interval = "60") {
   const encoded = encodeURIComponent(symbol);
@@ -355,9 +302,7 @@ async function loadAppConfig() {
     const sel = document.getElementById('pair-select');
     if (sel) sel.value = cfg.pair;
 
-    // Show/hide no-model badge
-    const badge = document.getElementById('no-model-badge');
-    badge.style.display = cfg.model_exists ? 'none' : 'inline-block';
+
 
     return cfg;
   } catch(e) {
@@ -379,81 +324,25 @@ async function onPairChange() {
     });
     const cfg = await loadAppConfig();
     const refreshBtn = document.getElementById('refresh-btn');
-    if (cfg && cfg.model_exists) {
-      refreshBtn.disabled = false;
-      fetchSignal();
-    } else {
-      // No model — disable predict button and reset signal display
-      refreshBtn.disabled = true;
-      const val = document.getElementById('signal-val');
-      val.textContent = '—';
-      val.className = 'signal-value UNKNOWN';
-      document.getElementById('conf-pct').textContent = '0%';
-      document.getElementById('conf-fill').style.width = '0%';
-      document.getElementById('close-val').textContent = '0.00000';
-      document.getElementById('sl-val').textContent = '—';
-      document.getElementById('tp-val').textContent = '—';
-      document.getElementById('prob-up').textContent = '0.0%';
-      document.getElementById('prob-down').textContent = '0.0%';
-      document.getElementById('time-val').textContent = '—';
-    }
+    refreshBtn.disabled = !cfg.model_exists;
+    const val = document.getElementById('signal-val');
+    val.textContent = '—';
+    val.className = 'signal-value UNKNOWN';
+    document.getElementById('conf-pct').textContent = '0%';
+    document.getElementById('conf-fill').style.width = '0%';
+    document.getElementById('close-val').textContent = '0.00000';
+    document.getElementById('sl-val').textContent = '—';
+    document.getElementById('tp-val').textContent = '—';
+    document.getElementById('prob-up').textContent = '0.0%';
+    document.getElementById('prob-down').textContent = '0.0%';
+    document.getElementById('time-val').textContent = '—';
   } catch(e) {
     err.style.display = 'block';
     err.textContent = 'Failed to switch pair.';
   }
 }
 
-async function trainModel() {
-  const btn = document.getElementById('train-btn');
-  const err = document.getElementById('error-box');
-  btn.disabled = true;
-  btn.textContent = '⏳ TRAINING...';
-  err.style.display = 'none';
 
-  try {
-    const res = await fetch('/api/train', {method:'POST'});
-    const d = await res.json();
-    if (d.error) {
-      err.style.display = 'block';
-      err.textContent = 'Training error: ' + d.error;
-      btn.disabled = false;
-      btn.textContent = '⚡ TRAIN MODEL';
-      return;
-    }
-    pollTrainStatus();
-  } catch(e) {
-    err.style.display = 'block';
-    err.textContent = 'Failed to start training. Is app.py running?';
-    btn.disabled = false;
-    btn.textContent = '⚡ TRAIN MODEL';
-  }
-}
-
-function pollTrainStatus() {
-  clearInterval(trainPollTimer);
-  trainPollTimer = setInterval(async () => {
-    try {
-      const res  = await fetch('/api/train_status');
-      const data = await res.json();
-      const btn  = document.getElementById('train-btn');
-      const err  = document.getElementById('error-box');
-
-      if (!data.running) {
-        clearInterval(trainPollTimer);
-        btn.disabled = false;
-        btn.textContent = '⚡ TRAIN MODEL';
-        if (data.success) {
-          await loadAppConfig();
-          document.getElementById('refresh-btn').disabled = false;
-          fetchSignal();
-        } else {
-          err.style.display = 'block';
-          err.textContent = '❌ Training failed. Check the terminal for details.';
-        }
-      }
-    } catch(e) {}
-  }, 2000);
-}
 
 async function fetchSignal() {
   const btn = document.getElementById('refresh-btn');
@@ -532,11 +421,55 @@ function setAutoRefresh() {
   autoTimer = setInterval(fetchSignal, secs * 1000);
 }
 
-loadAppConfig().then(cfg => {
+async function initApp() {
+  const allPairs = {
+    "eurusd": ["EURUSD=X", "EUR/USD"],
+    "gbpusd": ["GBPUSD=X", "GBP/USD"],
+    "usdjpy": ["USDJPY=X", "USD/JPY"],
+    "usdchf": ["USDCHF=X", "USD/CHF"],
+    "audusd": ["AUDUSD=X", "AUD/USD"],
+    "usdcad": ["USDCAD=X", "USD/CAD"],
+    "nzdusd": ["NZDUSD=X", "NZD/USD"],
+    "eurgbp": ["EURGBP=X", "EUR/GBP"],
+    "eurjpy": ["EURJPY=X", "EUR/JPY"],
+    "gbpjpy": ["GBPJPY=X", "GBP/JPY"],
+    "inrusd": ["INRUSD=X", "INR/USD"],
+    "usdinr": ["USDINR=X", "USD/INR"],
+    "btc-usd": ["BTC-USD", "BTC/USD (Crypto)"],
+    "eth-usd": ["ETH-USD", "ETH/USD (Crypto)"],
+    "sol-usd": ["SOL-USD", "SOL/USD (Crypto)"]
+  };
+  try {
+    const res = await fetch('/api/models');
+    const data = await res.json();
+    const sel = document.getElementById('pair-select');
+    sel.innerHTML = '';
+    
+    let added = 0;
+    for (let key in allPairs) {
+        if (data.trained_pairs && data.trained_pairs.includes(key)) {
+            const [val, label] = allPairs[key];
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = label;
+            sel.appendChild(opt);
+            added++;
+        }
+    }
+    
+    if (added === 0) {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "No Models Trained";
+        sel.appendChild(opt);
+    }
+  } catch(e) {}
+  
+  await loadAppConfig();
   setAutoRefresh();
-  // Only predict on load if a model exists for the current pair
-  if (cfg && cfg.model_exists) fetchSignal();
-});
+}
+
+initApp();
 </script>
 
 </body>
