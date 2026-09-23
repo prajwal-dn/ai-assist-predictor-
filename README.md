@@ -47,6 +47,7 @@ By automating the complex analysis of historical data, technical indicators, and
 *   **Live Interactive Charting:** Embedded real-time TradingView widget for simultaneous price action analysis.
 *   **Premium Glassmorphism UI:** A sleek, dark-mode aesthetic with live status indicators and dynamic probability gauges.
 *   **Automated Risk Management:** Calculates dynamic **Stop Loss** and **Take Profit** levels based on current market volatility (ATR), enforcing strict risk discipline.
+*   **Permanent Run History:** Automatically saves and syncs every AI prediction to a secure Hugging Face Dataset, which can be viewed directly in the application's *Run History* dashboard.
 
 ---
 
@@ -76,7 +77,9 @@ Edit `config.yaml` to define your trading parameters. For reliable live data wit
    timeframe: "1h"
    confidence_threshold: 0.65
    ```
-3. **Hugging Face Spaces:** Add it as a Space Secret named `TWELVEDATA_API_KEY` instead of committing it to the repo.
+3. **Hugging Face Spaces:** Add the following as **Space Secrets** instead of committing them to the repo:
+   *   `TWELVEDATA_API_KEY`: For professional real-time API connectivity.
+   *   `HF_TOKEN`: Create a Write-access token from your Hugging Face settings. The application uses this to automatically backup your Prediction Log History to a private dataset!
 
 ### 3. Initialize the AI (First Run)
 Run the automated pipeline to download data, engineer features, and train the optimized model:
