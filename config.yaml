@@ -55,3 +55,11 @@ paths:
   processed_data: "data/processed/"
   labelled_data:  "data/labelled/"
   models:         "models/"
+
+# MariaDB database (stores all prediction runs)
+database:
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: "praj"
+  name: "forex_predictor"

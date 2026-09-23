@@ -2,6 +2,7 @@
 app.py
 ------
 Simple web server that serves the dashboard and runs predict.py on demand.
+All prediction runs are persisted to MariaDB.
 
 Usage:
     python app.py
@@ -12,12 +13,17 @@ import os, sys, json, subprocess, time, yaml, threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
+# Add src/ to path so we can import db module
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+from db import save_prediction_run, get_recent_runs, get_run_stats, test_connection
+
 PORT = int(os.environ.get("PORT", 7860))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_TTL_SECONDS = int(os.environ.get("PREDICTION_CACHE_SECONDS", 60))
 _prediction_cache = {}   # keyed by pair+timeframe
 _train_status = {"running": False, "log": "", "success": None}
 _train_lock = threading.Lock()
+_db_available = False
 
 
 def load_app_config():
@@ -140,6 +146,14 @@ def run_predict():
     if not data["error"]:
         _prediction_cache[cache_key] = {"time": now, "data": data}
 
+    # Persist run to MariaDB
+    if _db_available:
+        try:
+            run_id = save_prediction_run(data, cfg["pair"], cfg["timeframe"], cfg["forecast_horizon"])
+            data["run_id"] = run_id
+        except Exception as e:
+            print(f"[DB WARNING] Could not save run: {e}")
+
     return data
 
 
@@ -176,12 +190,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = urlparse(self.path).path
+        qs = parse_qs(urlparse(self.path).query)
 
         if path == "/" or path == "/index.html":
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             html_path = os.path.join(BASE_DIR, "dashboard.html")
+            with open(html_path, "rb") as f:
+                self.wfile.write(f.read())
+
+        elif path == "/history":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            html_path = os.path.join(BASE_DIR, "history.html")
             with open(html_path, "rb") as f:
                 self.wfile.write(f.read())
 
@@ -193,6 +216,24 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/models":
             self.send_json(load_trained_pairs())
+
+        elif path == "/api/history":
+            if not _db_available:
+                self.send_json({"error": "Database not connected"}, 503)
+                return
+            pair_filter = qs.get("pair", [None])[0]
+            limit = int(qs.get("limit", [50])[0])
+            runs = get_recent_runs(limit=limit, pair_filter=pair_filter)
+            self.send_json({"runs": runs})
+
+        elif path == "/api/stats":
+            if not _db_available:
+                self.send_json({"error": "Database not connected"}, 503)
+                return
+            self.send_json(get_run_stats())
+
+        elif path == "/api/db_status":
+            self.send_json({"connected": _db_available})
 
         else:
             self.send_response(404)
@@ -225,7 +266,19 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    # Test MariaDB connection at startup
+    try:
+        _db_available = test_connection()
+        if _db_available:
+            print(" ✅ MariaDB connected — all runs will be persisted")
+        else:
+            print(" ⚠️  MariaDB unavailable — runs will NOT be saved")
+    except Exception as e:
+        print(f" ⚠️  MariaDB connection failed: {e}")
+        _db_available = False
+
     print(f"\n Asset Predictor Dashboard")
-    print(f" Open this in your browser: http://localhost:{PORT}\n")
+    print(f" Open this in your browser: http://localhost:{PORT}")
+    print(f" Run History page:          http://localhost:{PORT}/history\n")
     server = HTTPServer(("", PORT), Handler)
     server.serve_forever()

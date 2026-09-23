@@ -95,7 +95,26 @@
     overflow: hidden;
     margin: 12px 0;
   }
-  .conf-fill { height: 100%; background: var(--accent); transition: width 1s ease-out; }
+  .conf-fill { height: 100%; background: var(--accent); transition: width 1s ease-out, background 0.3s; }
+  .conf-fill.BUY { background: var(--buy); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+  .conf-fill.SELL { background: var(--sell); box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+  .conf-fill.FLAT { background: var(--flat); box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes flashGreen { 0% { color: var(--buy); text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); } 100% { color: var(--text); text-shadow: none; } }
+  @keyframes flashRed { 0% { color: var(--sell); text-shadow: 0 0 15px rgba(239, 68, 68, 0.5); } 100% { color: var(--text); text-shadow: none; } }
+  .flash-up { animation: flashGreen 1s ease-out; }
+  .flash-down { animation: flashRed 1s ease-out; }
 
   /* Right Column: Chart & Metrics */
   .content-panel { display: flex; flex-direction: column; gap: 20px; }
@@ -166,19 +185,27 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
   #error-box {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--sell);
-    color: var(--sell);
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 16px;
-    display: none;
-    font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    white-space: pre-wrap;
-    max-height: 200px;
-    overflow-y: auto;
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    background: rgba(17, 24, 39, 0.95);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-left: 4px solid var(--sell);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 320px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
   }
+  #error-box.show { transform: translateX(0); opacity: 1; pointer-events: auto; }
 </style>
 </head>
 <body>
@@ -188,7 +215,10 @@
     <h1>ASSET PREDICTOR <span style="font-weight:300; opacity:0.5">PRO</span></h1>
     <div class="status-pill"><div class="dot"></div> LIVE AI AGENT</div>
   </div>
-  <div class="pair-badge" id="pair-display" style="font-family:'JetBrains Mono'; color:var(--text-dim)">LOADING MARKET</div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="/history" style="color:var(--text-dim); text-decoration:none; font-size:13px; font-weight:600; padding:6px 14px; border:1px solid var(--border); border-radius:10px; transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-dim)'">📜 RUN HISTORY</a>
+    <div class="pair-badge" id="pair-display" style="font-family:'JetBrains Mono'; color:var(--text-dim)">LOADING MARKET</div>
+  </div>
 </div>
 
 <div id="error-box"></div>
@@ -282,6 +312,15 @@
 <script>
 let history = [];
 let autoTimer = null;
+let errorTimeout = null;
+
+function showError(msg) {
+  const err = document.getElementById('error-box');
+  err.innerHTML = `<strong style="color:var(--sell)">System Notification</strong><br><span style="color:var(--text-dim);font-size:12px">${msg}</span>`;
+  err.classList.add('show');
+  clearTimeout(errorTimeout);
+  errorTimeout = setTimeout(() => { err.classList.remove('show'); }, 5000);
+}
 
 function loadChart(symbol = "FX:EURUSD", interval = "60") {
   const encoded = encodeURIComponent(symbol);
@@ -313,8 +352,7 @@ async function loadAppConfig() {
 
 async function onPairChange() {
   const pair = document.getElementById('pair-select').value;
-  const err  = document.getElementById('error-box');
-  err.style.display = 'none';
+  document.getElementById('error-box').classList.remove('show');
 
   try {
     await fetch('/api/set_pair', {
@@ -323,13 +361,13 @@ async function onPairChange() {
       body: JSON.stringify({pair})
     });
     const cfg = await loadAppConfig();
-    const refreshBtn = document.getElementById('refresh-btn');
-    refreshBtn.disabled = !cfg.model_exists;
+    document.getElementById('refresh-btn').disabled = !cfg.model_exists;
     const val = document.getElementById('signal-val');
     val.textContent = '—';
     val.className = 'signal-value UNKNOWN';
     document.getElementById('conf-pct').textContent = '0%';
     document.getElementById('conf-fill').style.width = '0%';
+    document.getElementById('conf-fill').className = 'conf-fill';
     document.getElementById('close-val').textContent = '0.00000';
     document.getElementById('sl-val').textContent = '—';
     document.getElementById('tp-val').textContent = '—';
@@ -337,8 +375,7 @@ async function onPairChange() {
     document.getElementById('prob-down').textContent = '0.0%';
     document.getElementById('time-val').textContent = '—';
   } catch(e) {
-    err.style.display = 'block';
-    err.textContent = 'Failed to switch pair.';
+    showError('Failed to switch pair.');
   }
 }
 
@@ -346,38 +383,38 @@ async function onPairChange() {
 
 async function fetchSignal() {
   const btn = document.getElementById('refresh-btn');
-  const err = document.getElementById('error-box');
-  // Guard: check model exists before running prediction
+  const sel = document.getElementById('pair-select');
+  document.getElementById('error-box').classList.remove('show');
+
   try {
     const cfg = await (await fetch('/api/config')).json();
     if (!cfg.model_exists) {
-      err.style.display = 'block';
-      err.textContent = `No trained model for ${cfg.pair_code}. Click ⚡ TRAIN MODEL first.`;
+      showError(`No trained model for ${cfg.pair_code}. Model training pipeline running.`);
       return;
     }
   } catch(e) {}
+  
   btn.disabled = true;
-  btn.textContent = "ANALYZING...";
-  err.style.display = 'none';
+  sel.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> ANALYZING...';
 
   try {
     const res = await fetch('/api/predict');
     const data = await res.json();
 
     if (data.error) {
-      err.style.display = 'block';
-      err.textContent = "ENGINE ERROR:\n" + data.raw;
+      showError(data.raw || "Internal execution error.");
       return;
     }
 
     updateUI(data);
     addToHistory(data);
   } catch(e) {
-    err.style.display = 'block';
-    err.textContent = "CONNECTION LOST: Ensure app.py is running.";
+    showError("CONNECTION LOST: Ensure app.py is running.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "RUN PREDICTION";
+    sel.disabled = false;
+    btn.innerHTML = "RUN PREDICTION";
   }
 }
 
@@ -387,8 +424,18 @@ function updateUI(d) {
   val.className = 'signal-value ' + d.signal;
 
   document.getElementById('conf-pct').textContent = d.confidence.toFixed(1) + '%';
-  document.getElementById('conf-fill').style.width = d.confidence + '%';
-  document.getElementById('close-val').textContent = d.close.toFixed(5);
+  const confFill = document.getElementById('conf-fill');
+  confFill.style.width = d.confidence + '%';
+  confFill.className = 'conf-fill ' + d.signal;
+  
+  const closeEl = document.getElementById('close-val');
+  const oldVal = parseFloat(closeEl.textContent);
+  closeEl.textContent = d.close.toFixed(5);
+  closeEl.classList.remove('flash-up', 'flash-down');
+  void closeEl.offsetWidth; // trigger reflow
+  if (d.close > oldVal) closeEl.classList.add('flash-up');
+  else if (d.close < oldVal) closeEl.classList.add('flash-down');
+  
   document.getElementById('sl-val').textContent = d.stop_loss ? d.stop_loss.toFixed(5) : '—';
   document.getElementById('tp-val').textContent = d.take_profit ? d.take_profit.toFixed(5) : '—';
   document.getElementById('prob-up').textContent = d.prob_up.toFixed(1) + '%';

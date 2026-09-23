@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run History | Asset Predictor PRO</title>
+<meta name="description" content="Complete history of all AI prediction runs with date, time, signal, and performance metrics.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05070a;
+    --card-bg: rgba(17, 24, 39, 0.7);
+    --card-bg-solid: #111827;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --buy: #10b981;
+    --buy-bg: rgba(16, 185, 129, 0.08);
+    --buy-border: rgba(16, 185, 129, 0.25);
+    --sell: #ef4444;
+    --sell-bg: rgba(239, 68, 68, 0.08);
+    --sell-border: rgba(239, 68, 68, 0.25);
+    --flat: #f59e0b;
+    --flat-bg: rgba(245, 158, 11, 0.08);
+    --flat-border: rgba(245, 158, 11, 0.25);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 40%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  .glass {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass:hover {
+    border-color: var(--border-hover);
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .logo-group { display: flex; align-items: center; gap: 16px; }
+  .logo-group h1 {
+    font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-link {
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .nav-link:hover { color: var(--text); border-color: var(--accent); background: var(--accent-glow); }
+  .nav-link.active { color: var(--accent); border-color: var(--accent); background: var(--accent-glow); }
+
+  .db-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid;
+  }
+  .db-badge.connected { color: #4ade80; background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2); }
+  .db-badge.disconnected { color: #f87171; background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+  .db-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  .db-badge.connected .db-dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .db-badge.disconnected .db-dot { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+  /* Stats Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .stat-card:hover::before { opacity: 1; }
+  .stat-label {
+    font-size: 10px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 28px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    background: linear-gradient(135deg, var(--text) 0%, var(--text-dim) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .stat-value.buy { background: linear-gradient(135deg, var(--buy), #34d399); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-value.sell { background: linear-gradient(135deg, var(--sell), #f87171); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-value.flat { background: linear-gradient(135deg, var(--flat), #fbbf24); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-sub {
+    font-size: 11px; color: var(--text-muted); margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Controls */
+  .controls-bar {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; flex-wrap: wrap;
+  }
+  select, .search-input {
+    background: var(--card-bg-solid);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  select:focus, .search-input:focus { border-color: var(--accent); }
+  .search-input { min-width: 200px; }
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-accent {
+    background: var(--accent); color: #fff;
+  }
+  .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+  .btn-ghost {
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+
+  /* Table */
+  .table-container {
+    overflow-x: auto;
+    padding: 0;
+  }
+  .table-container .glass { padding: 0; overflow: hidden; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    position: sticky; top: 0; z-index: 2;
+  }
+  thead th {
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr {
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  tbody tr:hover {
+    background: rgba(59, 130, 246, 0.04);
+  }
+  tbody td {
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--text-dim);
+  }
+  .run-id {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .run-date {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .run-time {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  /* Signal Badges */
+  .signal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .signal-badge.BUY { color: var(--buy); background: var(--buy-bg); border: 1px solid var(--buy-border); }
+  .signal-badge.SELL { color: var(--sell); background: var(--sell-bg); border: 1px solid var(--sell-border); }
+  .signal-badge.FLAT { color: var(--flat); background: var(--flat-bg); border: 1px solid var(--flat-border); }
+  .signal-badge.UNKNOWN { color: var(--text-muted); background: rgba(100,116,139,0.08); border: 1px solid rgba(100,116,139,0.2); }
+  .signal-badge .signal-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+  .signal-badge.BUY .signal-dot { background: var(--buy); box-shadow: 0 0 6px var(--buy); }
+  .signal-badge.SELL .signal-dot { background: var(--sell); box-shadow: 0 0 6px var(--sell); }
+  .signal-badge.FLAT .signal-dot { background: var(--flat); box-shadow: 0 0 6px var(--flat); }
+
+  /* Confidence Bar */
+  .conf-bar-container {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .conf-bar {
+    width: 60px; height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px; overflow: hidden;
+  }
+  .conf-bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.5s ease-out;
+  }
+  .conf-bar-fill.high { background: var(--buy); }
+  .conf-bar-fill.medium { background: var(--flat); }
+  .conf-bar-fill.low { background: var(--sell); }
+
+  .pair-tag {
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+  .empty-state h3 {
+    font-size: 16px; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .empty-state p {
+    font-size: 13px; max-width: 360px; margin: 0 auto;
+  }
+
+  /* Loading */
+  .loading {
+    text-align: center; padding: 40px;
+    color: var(--text-dim); font-size: 13px;
+  }
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; margin-top: 20px;
+  }
+  .page-info {
+    font-size: 12px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  tbody tr { animation: fadeIn 0.3s ease-out backwards; }
+  tbody tr:nth-child(1) { animation-delay: 0.02s; }
+  tbody tr:nth-child(2) { animation-delay: 0.04s; }
+  tbody tr:nth-child(3) { animation-delay: 0.06s; }
+  tbody tr:nth-child(4) { animation-delay: 0.08s; }
+  tbody tr:nth-child(5) { animation-delay: 0.10s; }
+
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-group">
+    <h1>RUN HISTORY <span style="font-weight:300;opacity:0.5">LOG</span></h1>
+    <div class="db-badge disconnected" id="db-badge">
+      <div class="db-dot"></div>
+      <span id="db-status-text">CHECKING...</span>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px">
+    <div class="nav-links">
+      <a href="/" class="nav-link">DASHBOARD</a>
+      <a href="/history" class="nav-link active">HISTORY</a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="stats-grid" id="stats-grid">
+  <div class="glass stat-card">
+    <div class="stat-label">Total Runs</div>
+    <div class="stat-value" id="stat-total">—</div>
+    <div class="stat-sub" id="stat-period"></div>
+  </div>
+  <div class="glass stat-card">
+    <div class="stat-label">Buy Signals</div>
+    <div class="stat-value buy" id="stat-buy">—</div>
+    <div class="stat-sub" id="stat-buy-pct"></div>
+  </div>
+  <div class="glass stat-card">
+    <div class="stat-label">Sell Signals</div>
+    <div class="stat-value sell" id="stat-sell">—</div>
+    <div class="stat-sub" id="stat-sell-pct"></div>
+  </div>
+  <div class="glass stat-card">
+    <div class="stat-label">Flat / No Trade</div>
+    <div class="stat-value flat" id="stat-flat">—</div>
+    <div class="stat-sub" id="stat-flat-pct"></div>
+  </div>
+  <div class="glass stat-card">
+    <div class="stat-label">Avg Confidence</div>
+    <div class="stat-value" id="stat-conf">—</div>
+    <div class="stat-sub">across all runs</div>
+  </div>
+  <div class="glass stat-card">
+    <div class="stat-label">Pairs Analyzed</div>
+    <div class="stat-value" id="stat-pairs">—</div>
+    <div class="stat-sub">unique assets</div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="controls-bar">
+  <select id="pair-filter" onchange="loadHistory()">
+    <option value="">All Pairs</option>
+  </select>
+  <select id="limit-select" onchange="loadHistory()">
+    <option value="25">Last 25 runs</option>
+    <option value="50" selected>Last 50 runs</option>
+    <option value="100">Last 100 runs</option>
+    <option value="200">Last 200 runs</option>
+  </select>
+  <button class="btn btn-accent" onclick="loadHistory()" id="refresh-btn">
+    ↻ REFRESH
+  </button>
+  <span id="last-updated" style="font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono'; margin-left:auto"></span>
+</div>
+
+<!-- Table -->
+<div class="table-container">
+  <div class="glass">
+    <div id="table-content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>Loading run history...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pagination" id="pagination"></div>
+
+<script>
+const ALL_PAIRS = {
+  "EURUSD=X": "EUR/USD", "GBPUSD=X": "GBP/USD", "USDJPY=X": "USD/JPY",
+  "USDCHF=X": "USD/CHF", "AUDUSD=X": "AUD/USD", "USDCAD=X": "USD/CAD",
+  "NZDUSD=X": "NZD/USD", "EURGBP=X": "EUR/GBP", "EURJPY=X": "EUR/JPY",
+  "GBPJPY=X": "GBP/JPY", "INRUSD=X": "INR/USD", "USDINR=X": "USD/INR",
+  "BTC-USD": "BTC/USD", "ETH-USD": "ETH/USD", "SOL-USD": "SOL/USD"
+};
+
+async function checkDbStatus() {
+  try {
+    const res = await fetch('/api/db_status');
+    const data = await res.json();
+    const badge = document.getElementById('db-badge');
+    const text = document.getElementById('db-status-text');
+    if (data.connected) {
+      badge.className = 'db-badge connected';
+      text.textContent = 'MariaDB ONLINE';
+    } else {
+      badge.className = 'db-badge disconnected';
+      text.textContent = 'MariaDB OFFLINE';
+    }
+    return data.connected;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const s = await res.json();
+    if (s.error) return;
+
+    document.getElementById('stat-total').textContent = s.total_runs || 0;
+    document.getElementById('stat-buy').textContent = s.buy_count || 0;
+    document.getElementById('stat-sell').textContent = s.sell_count || 0;
+    document.getElementById('stat-flat').textContent = s.flat_count || 0;
+    document.getElementById('stat-conf').textContent = s.avg_confidence ? s.avg_confidence.toFixed(1) + '%' : '—';
+    document.getElementById('stat-pairs').textContent = s.pairs_analyzed || 0;
+
+    const total = s.total_runs || 1;
+    document.getElementById('stat-buy-pct').textContent = ((s.buy_count / total) * 100).toFixed(0) + '% of runs';
+    document.getElementById('stat-sell-pct').textContent = ((s.sell_count / total) * 100).toFixed(0) + '% of runs';
+    document.getElementById('stat-flat-pct').textContent = ((s.flat_count / total) * 100).toFixed(0) + '% of runs';
+
+    if (s.first_run && s.last_run) {
+      document.getElementById('stat-period').textContent =
+        `${s.first_run.slice(0,10)} — ${s.last_run.slice(0,10)}`;
+    }
+  } catch(e) {}
+}
+
+async function loadHistory() {
+  const pairFilter = document.getElementById('pair-filter').value;
+  const limit = document.getElementById('limit-select').value;
+  const content = document.getElementById('table-content');
+
+  content.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading...</div></div>';
+
+  try {
+    let url = `/api/history?limit=${limit}`;
+    if (pairFilter) url += `&pair=${encodeURIComponent(pairFilter)}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+      content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Database Unavailable</h3><p>${data.error}</p></div>`;
+      return;
+    }
+
+    if (!data.runs || data.runs.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>No Prediction Runs Yet</h3>
+          <p>Go to the <a href="/" style="color:var(--accent)">Dashboard</a> and run a prediction. It will automatically be logged here.</p>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = renderTable(data.runs);
+    document.getElementById('last-updated').textContent =
+      'Updated: ' + new Date().toLocaleTimeString();
+
+  } catch(e) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">❌</div><h3>Connection Error</h3><p>Could not reach the server. Make sure app.py is running.</p></div>`;
+  }
+}
+
+function renderTable(runs) {
+  let html = `<table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date & Time</th>
+        <th>Pair</th>
+        <th>Timeframe</th>
+        <th>Signal</th>
+        <th>Confidence</th>
+        <th>Prob ↑</th>
+        <th>Prob ↓</th>
+        <th>Close Price</th>
+        <th>Stop Loss</th>
+        <th>Take Profit</th>
+        <th>Candle Time</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  runs.forEach((r, i) => {
+    const date = r.run_timestamp ? r.run_timestamp.slice(0, 10) : '—';
+    const time = r.run_timestamp ? r.run_timestamp.slice(11, 19) : '—';
+    const signal = r.trade_signal || 'UNKNOWN';
+    const conf = r.confidence || 0;
+    const confClass = conf >= 65 ? 'high' : conf >= 55 ? 'medium' : 'low';
+    const pairLabel = ALL_PAIRS[r.pair] || r.pair;
+
+    html += `<tr>
+      <td class="run-id">${r.id}</td>
+      <td>
+        <div class="run-date">${date}</div>
+        <div class="run-time">${time}</div>
+      </td>
+      <td><span class="pair-tag">${pairLabel}</span></td>
+      <td>${r.timeframe}</td>
+      <td><span class="signal-badge ${signal}"><span class="signal-dot"></span>${signal}</span></td>
+      <td>
+        <div class="conf-bar-container">
+          <div class="conf-bar"><div class="conf-bar-fill ${confClass}" style="width:${conf}%"></div></div>
+          <span>${conf.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="color:var(--buy)">${r.prob_up ? r.prob_up.toFixed(1) + '%' : '—'}</td>
+      <td style="color:var(--sell)">${r.prob_down ? r.prob_down.toFixed(1) + '%' : '—'}</td>
+      <td style="color:var(--text);font-weight:500">${r.close_price ? r.close_price.toFixed(5) : '—'}</td>
+      <td style="color:var(--sell)">${r.stop_loss ? r.stop_loss.toFixed(5) : '—'}</td>
+      <td style="color:var(--buy)">${r.take_profit ? r.take_profit.toFixed(5) : '—'}</td>
+      <td class="run-time">${r.candle_timestamp ? r.candle_timestamp.slice(0, 16) : '—'}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  return html;
+}
+
+async function populatePairFilter() {
+  const sel = document.getElementById('pair-filter');
+  try {
+    const res = await fetch('/api/models');
+    const data = await res.json();
+    if (data.trained_pairs) {
+      data.trained_pairs.forEach(key => {
+        // Build yfinance-style pair code from the key
+        let pair;
+        if (key.includes('-')) {
+          pair = key.toUpperCase();
+        } else {
+          pair = key.toUpperCase() + '=X';
+        }
+        const label = ALL_PAIRS[pair] || pair;
+        const opt = document.createElement('option');
+        opt.value = pair;
+        opt.textContent = label;
+        sel.appendChild(opt);
+      });
+    }
+  } catch(e) {}
+}
+
+async function init() {
+  await checkDbStatus();
+  await populatePairFilter();
+  await Promise.all([loadStats(), loadHistory()]);
+}
+
+init();
+</script>
+
+</body>
+</html>
