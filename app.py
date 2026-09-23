@@ -266,15 +266,15 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    # Test MariaDB connection at startup
+    # Test Database (HF Datasets/Local File) connection at startup
     try:
         _db_available = test_connection()
         if _db_available:
-            print(" ✅ MariaDB connected — all runs will be persisted")
+            print(" ✅ History Tracking enabled — runs will be saved locally & synced to HF Hub")
         else:
-            print(" ⚠️  MariaDB unavailable — runs will NOT be saved")
+            print(" ⚠️  Tracking unavailable — runs will NOT be saved")
     except Exception as e:
-        print(f" ⚠️  MariaDB connection failed: {e}")
+        print(f" ⚠️  Database initialization failed: {e}")
         _db_available = False
 
     print(f"\n Asset Predictor Dashboard")

@@ -56,10 +56,5 @@ paths:
   labelled_data:  "data/labelled/"
   models:         "models/"
 
-# MariaDB database (stores all prediction runs)
-database:
-  host: "localhost"
-  port: 3306
-  user: "root"
-  password: "praj"
-  name: "forex_predictor"
+# HF Dataset for logging run history
+hf_dataset_repo: "praj-9035/ai-asset-predictor-history"

@@ -446,10 +446,10 @@ async function checkDbStatus() {
     const text = document.getElementById('db-status-text');
     if (data.connected) {
       badge.className = 'db-badge connected';
-      text.textContent = 'MariaDB ONLINE';
+      text.textContent = 'DATASET ONLINE';
     } else {
       badge.className = 'db-badge disconnected';
-      text.textContent = 'MariaDB OFFLINE';
+      text.textContent = 'DATASET OFFLINE';
     }
     return data.connected;
   } catch(e) {
