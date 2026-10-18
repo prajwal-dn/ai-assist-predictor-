@@ -490,7 +490,11 @@ async function loadAppConfig() {
     return cfg;
   } catch(e) {
     document.getElementById('pair-display').textContent = 'CONFIG UNAVAILABLE';
+    const btn = document.getElementById('refresh-btn');
+    if (btn) btn.disabled = true;
+    setServiceStatus('Service unavailable', 'offline', 'Could not load application configuration. Restart app.py and check the server logs.');
     loadChart();
+    return null;
   }
 }
 
@@ -621,8 +625,8 @@ function addToHistory(d) {
 
 function setAutoRefresh() {
   clearInterval(autoTimer);
-  const secs = parseInt(document.getElementById('auto-select').value);
-  if (!secs) return;
+  const secs = parseInt(document.getElementById('auto-select').value, 10);
+  if (!secs || document.getElementById('refresh-btn').disabled) return;
   autoTimer = setInterval(fetchSignal, secs * 1000);
 }
 
