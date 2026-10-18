@@ -120,10 +120,43 @@ def run_predict():
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONWARNINGS"] = "ignore"
-    result = subprocess.run(
-        [sys.executable, os.path.join(BASE_DIR, "src", "predict.py")],
-        capture_output=True, text=True, encoding="utf-8", cwd=BASE_DIR, env=env
+    cfg_status = artifact_status(
+        cfg["pair"].replace("=X", "").lower(),
+        cfg["paths"]["models"] if os.path.isabs(cfg["paths"]["models"])
+        else os.path.join(BASE_DIR, cfg["paths"]["models"])
     )
+    if not cfg_status["ready"]:
+        return {
+            "signal": "UNKNOWN", "prob_up": 0, "prob_down": 0,
+            "confidence": 0, "close": 0, "timestamp": "",
+            "stop_loss": None, "take_profit": None,
+            "raw": cfg_status["reason"], "error": True
+        }
+
+    try:
+        result = subprocess.run(
+            [sys.executable, os.path.join(BASE_DIR, "src", "predict.py")],
+            capture_output=True, text=True, encoding="utf-8",
+            cwd=BASE_DIR, env=env,
+            timeout=max(10, int(os.environ.get("PREDICTION_TIMEOUT_SECONDS", "45")))
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "signal": "UNKNOWN", "prob_up": 0, "prob_down": 0,
+            "confidence": 0, "close": 0, "timestamp": "",
+            "stop_loss": None, "take_profit": None,
+            "raw": "Prediction timed out. Check the market-data provider and retry.",
+            "error": True
+        }
+    except OSError as exc:
+        return {
+            "signal": "UNKNOWN", "prob_up": 0, "prob_down": 0,
+            "confidence": 0, "close": 0, "timestamp": "",
+            "stop_loss": None, "take_profit": None,
+            "raw": f"Could not start prediction process: {exc}",
+            "error": True
+        }
+
     stdout = result.stdout if result.stdout is not None else ""
     stderr = result.stderr if result.stderr is not None else ""
     output = stdout + stderr
@@ -186,7 +219,7 @@ def run_predict():
     if not data["error"]:
         _prediction_cache[cache_key] = {"time": now, "data": data}
 
-    # Persist run to MariaDB
+    # Persist valid prediction runs to local JSON with optional HF Dataset sync
     if _db_available:
         try:
             run_id = save_prediction_run(data, cfg["pair"], cfg["timeframe"], cfg["forecast_horizon"])
