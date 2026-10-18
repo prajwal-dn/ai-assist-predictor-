@@ -427,11 +427,14 @@ function setServiceStatus(label, state, detail) {
   const pill = document.getElementById('service-status');
   const labelEl = document.getElementById('service-status-text');
   const notice = document.getElementById('readiness-notice');
-  pill.className = 'status-pill' + (state ? ' ' + state : '');
-  labelEl.textContent = String(label || 'STATUS UNKNOWN').toUpperCase();
-  if (detail) notice.textContent = detail;
-  notice.className = 'readiness-notice' + (state ? ' ' + state : '');
+  if (pill) pill.className = 'status-pill' + (state ? ' ' + state : '');
+  if (labelEl) labelEl.textContent = String(label || 'STATUS UNKNOWN').toUpperCase();
+  if (notice && detail) notice.textContent = detail;
+  if (notice) notice.className = 'readiness-notice' + (state ? ' ' + state : '');
+  const backendStat = document.getElementById('stat-backend-status');
+  if (backendStat) backendStat.textContent = state === 'ready' ? 'Responding' : state === 'offline' ? 'Check needed' : 'Checking…';
 }
+
 
 function applyTheme(theme) {
   const light = theme === 'light';
@@ -469,53 +472,62 @@ function showError(msg) {
 
 function loadChart(symbol = "FX:EURUSD", interval = "60") {
   const encoded = encodeURIComponent(symbol);
+  const theme = document.body.classList.contains('theme-light') ? 'light' : 'dark';
   document.getElementById('tv-chart').src =
-    `https://www.tradingview.com/widgetembed/?symbol=${encoded}&interval=${interval}&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0`;
+    `https://www.tradingview.com/widgetembed/?symbol=${encoded}&interval=${interval}&theme=${theme}&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0`;
 }
+
+
 
 async function loadAppConfig() {
   try {
     const res = await fetch(window.assetPredictorApiUrl('/api/config'));
     if (!res.ok) throw new Error('Could not load application configuration.');
     const cfg = await res.json();
+    const pairCode = String(cfg.pair_code || cfg.pair || 'Unknown').toUpperCase();
+    const timeframe = String(cfg.timeframe || '1h').toUpperCase();
+    const horizon = Number(cfg.forecast_horizon || 4);
 
-    document.getElementById('pair-display').textContent =
-      `${cfg.pair_code} · ${String(cfg.timeframe || '').toUpperCase()} · ${cfg.forecast_horizon}H HORIZON`;
-    document.getElementById('model-market-label').textContent = `${cfg.pair_code} MODEL`;
+    const pairBadge = document.getElementById('pair-display');
+    if (pairBadge) pairBadge.textContent = `${pairCode} · ${timeframe} · ${horizon}H`;
+    document.getElementById('model-market-label').textContent = `${pairCode} model`;
+    document.getElementById('stat-current-market').textContent = pairCode;
+    document.getElementById('stat-horizon').textContent = `${horizon} hours`;
+    document.getElementById('timeframe-display').textContent = timeframe === '1D' ? '1 Day' : timeframe === '4H' ? '4 Hours' : '1 Hour';
+    document.getElementById('horizon-display').textContent = `${horizon} Hours`;
+    document.getElementById('result-horizon').textContent = `${horizon}h horizon`;
     loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
 
     const sel = document.getElementById('pair-select');
     if (sel && [...sel.options].some(option => option.value === cfg.pair)) sel.value = cfg.pair;
-
     const runBtn = document.getElementById('refresh-btn');
     if (runBtn) runBtn.disabled = !cfg.model_exists || !sel || sel.disabled;
+
     if (cfg.model_exists) {
-      setServiceStatus(
-        'Artifacts present',
-        'ready',
-        'Model files are present. Full model loading and market-data availability are verified when you run a prediction.'
-      );
+      setServiceStatus('Artifacts present', 'ready', 'Model artifacts are detected. Market-data availability and successful model inference are checked when you run a prediction.');
+      document.getElementById('result-state').textContent = 'Ready';
     } else {
-      setServiceStatus(
-        'Model unavailable',
-        'offline',
-        cfg.model_status || 'No verified model files were found. Download the actual model artifacts with Git LFS or retrain a model.'
-      );
+      setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model files were found. Download the actual model artifacts or retrain this market.');
+      document.getElementById('result-state').textContent = 'Unavailable';
     }
     return cfg;
   } catch(e) {
-    document.getElementById('pair-display').textContent = 'CONFIG UNAVAILABLE';
+    const pairBadge = document.getElementById('pair-display');
+    if (pairBadge) pairBadge.textContent = 'API unavailable';
     const btn = document.getElementById('refresh-btn');
     if (btn) btn.disabled = true;
-    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load application configuration. Restart app.py and check the server logs.');
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load application configuration. Check the backend service.');
     loadChart();
     return null;
   }
 }
 
+
+
 async function onPairChange() {
   const pair = document.getElementById('pair-select').value;
   document.getElementById('error-box').classList.remove('show');
+  document.getElementById('refresh-btn').disabled = true;
 
   try {
     const response = await fetch(window.assetPredictorApiUrl('/api/set_pair'), {
@@ -526,19 +538,29 @@ async function onPairChange() {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || 'This market is not available.');
     const cfg = await loadAppConfig();
+    if (!cfg) return;
     document.getElementById('refresh-btn').disabled = !cfg.model_exists;
-    const val = document.getElementById('signal-val');
-    val.textContent = '—';
-    val.className = 'signal-value UNKNOWN';
+
+    document.getElementById('signal-val').textContent = '—';
+    document.getElementById('signal-val').className = 'signal-value UNKNOWN';
+    document.getElementById('signal-caption').textContent = 'Run a prediction to generate a model signal.';
+    document.getElementById('result-state').textContent = 'Ready';
     document.getElementById('conf-pct').textContent = '0%';
+    document.getElementById('confidence-ring').style.setProperty('--ring-angle','0deg');
+    document.getElementById('confidence-ring').setAttribute('aria-label','Model confidence 0 percent');
     document.getElementById('conf-fill').style.width = '0%';
     document.getElementById('conf-fill').className = 'conf-fill';
-    document.getElementById('close-val').textContent = '0.00000';
+    document.getElementById('close-val').textContent = '—';
     document.getElementById('sl-val').textContent = '—';
     document.getElementById('tp-val').textContent = '—';
     document.getElementById('prob-up').textContent = '0.0%';
     document.getElementById('prob-down').textContent = '0.0%';
-    document.getElementById('time-val').textContent = '—';
+    document.getElementById('prob-up-bar').style.width = '0%';
+    document.getElementById('prob-down-bar').style.width = '0%';
+    document.getElementById('time-val').textContent = 'No prediction yet';
+    document.getElementById('model-confidence-label').textContent = 'Not run';
+    document.getElementById('insights-list').innerHTML =
+      '<div class="insight-item"><span class="insight-dot">1</span><span>Run a prediction to see a summary of the model output.</span></div>';
   } catch(e) {
     showError(e.message || 'Failed to switch pair.');
     const cfg = await loadAppConfig();
@@ -561,7 +583,7 @@ async function fetchSignal() {
     if (!cfg.model_exists) {
       btn.disabled = true;
       setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model is available for this market.');
-      showError(cfg.model_status || `No verified model for ${cfg.pair_code}. Download the actual artifact files or retrain this market.`);
+      showError(cfg.model_status || `No verified model for ${cfg.pair_code}.`);
       return;
     }
   } catch(e) {
@@ -573,7 +595,8 @@ async function fetchSignal() {
 
   btn.disabled = true;
   sel.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> ANALYZING...';
+  btn.innerHTML = '<span class="spinner"></span> ANALYZING…';
+  document.getElementById('result-state').textContent = 'Analyzing';
 
   try {
     const res = await fetch(window.assetPredictorApiUrl('/api/predict'));
@@ -581,83 +604,170 @@ async function fetchSignal() {
     if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
       const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
       setServiceStatus('Prediction failed', 'offline', message);
+      document.getElementById('result-state').textContent = 'Failed';
       showError(message);
       return;
     }
 
     updateUI(data);
     addToHistory(data);
-    setServiceStatus(
-      'Prediction complete',
-      'ready',
-      `Last analysis completed at ${new Date().toLocaleTimeString()}. The signal uses the latest candle returned by the configured data provider.`
-    );
+    setServiceStatus('Prediction complete', 'ready', `Last analysis completed at ${new Date().toLocaleTimeString()}. Result uses the latest candle returned by the configured data provider.`);
   } catch(e) {
-    setServiceStatus('Prediction failed', 'offline', 'The server or market-data provider did not return a usable prediction. Review the error and retry.');
-    showError(e.message || 'Connection failed. Ensure app.py is running and the data provider is reachable.');
+    setServiceStatus('Prediction failed', 'offline', 'The backend did not return a usable prediction. Review the error and retry.');
+    document.getElementById('result-state').textContent = 'Failed';
+    showError(e.message || 'Connection failed. Ensure the Railway service is running and the data provider is reachable.');
   } finally {
     sel.disabled = false;
     btn.disabled = !(cfg && cfg.model_exists && sel.options.length > 0);
-    btn.innerHTML = 'RUN PREDICTION';
+    btn.innerHTML = '<span aria-hidden="true">▶</span> &nbsp;RUN PREDICTION';
     setAutoRefresh();
   }
 }
 
-function updateUI(d) {
-  const val = document.getElementById('signal-val');
-  val.textContent = d.signal;
-  val.className = 'signal-value ' + d.signal;
-  const caption = document.getElementById('signal-caption');
-  if (caption) caption.textContent = d.signal === 'BUY' ? 'Model indicates a bullish direction.' :
-    d.signal === 'SELL' ? 'Model indicates a bearish direction.' :
-    'No directional edge above the configured confidence threshold.';
 
-  document.getElementById('conf-pct').textContent = Number(d.confidence || 0).toFixed(1) + '%';
+
+function updateUI(d) {
+  const signal = ['BUY','SELL','FLAT'].includes(d.signal) ? d.signal : 'UNKNOWN';
+  const confidence = Math.max(0, Math.min(100, Number(d.confidence || 0)));
+  const probUp = Math.max(0, Math.min(100, Number(d.prob_up || 0)));
+  const probDown = Math.max(0, Math.min(100, Number(d.prob_down || 0)));
+  const close = Number(d.close || 0);
+  const val = document.getElementById('signal-val');
+  val.textContent = signal;
+  val.className = 'signal-value ' + signal;
+
+  document.getElementById('signal-caption').textContent = signal === 'BUY'
+    ? `Model leans bullish. Estimated upside probability: ${probUp.toFixed(1)}%.`
+    : signal === 'SELL'
+    ? `Model leans bearish. Estimated downside probability: ${probDown.toFixed(1)}%.`
+    : signal === 'FLAT'
+    ? 'The configured confidence threshold was not met for a directional signal.'
+    : 'No valid model signal was returned.';
+
+  document.getElementById('conf-pct').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('confidence-ring').style.setProperty('--ring-angle', (confidence * 3.6) + 'deg');
+  document.getElementById('confidence-ring').setAttribute('aria-label', 'Model confidence ' + confidence.toFixed(1) + ' percent');
   const confFill = document.getElementById('conf-fill');
-  confFill.style.width = d.confidence + '%';
-  confFill.className = 'conf-fill ' + d.signal;
-  
+  confFill.style.width = confidence + '%';
+  confFill.className = 'conf-fill ' + signal;
+
   const closeEl = document.getElementById('close-val');
   const oldVal = parseFloat(closeEl.textContent);
-  closeEl.textContent = d.close.toFixed(5);
+  closeEl.textContent = Number.isFinite(close) ? close.toFixed(5) : '—';
   closeEl.classList.remove('flash-up', 'flash-down');
-  void closeEl.offsetWidth; // trigger reflow
-  if (d.close > oldVal) closeEl.classList.add('flash-up');
-  else if (d.close < oldVal) closeEl.classList.add('flash-down');
-  
-  document.getElementById('sl-val').textContent = d.stop_loss ? d.stop_loss.toFixed(5) : '—';
-  document.getElementById('tp-val').textContent = d.take_profit ? d.take_profit.toFixed(5) : '—';
-  document.getElementById('prob-up').textContent = Number(d.prob_up || 0).toFixed(1) + '%';
-  document.getElementById('prob-down').textContent = Number(d.prob_down || 0).toFixed(1) + '%';
-  document.getElementById('time-val').textContent = String(d.timestamp || '—').slice(0,16);
+  if (Number.isFinite(oldVal)) {
+    void closeEl.offsetWidth;
+    if (close > oldVal) closeEl.classList.add('flash-up');
+    else if (close < oldVal) closeEl.classList.add('flash-down');
+  }
+  document.getElementById('sl-val').textContent = d.stop_loss != null && Number.isFinite(Number(d.stop_loss)) ? Number(d.stop_loss).toFixed(5) : '—';
+  document.getElementById('tp-val').textContent = d.take_profit != null && Number.isFinite(Number(d.take_profit)) ? Number(d.take_profit).toFixed(5) : '—';
+  document.getElementById('prob-up').textContent = probUp.toFixed(1) + '%';
+  document.getElementById('prob-down').textContent = probDown.toFixed(1) + '%';
+  document.getElementById('prob-up-bar').style.width = probUp + '%';
+  document.getElementById('prob-down-bar').style.width = probDown + '%';
+  document.getElementById('time-val').textContent = String(d.timestamp || '—').replace('T',' ').slice(0,16);
+  document.getElementById('result-state').textContent = 'Result ready';
+  document.getElementById('model-confidence-label').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('insights-list').innerHTML = [
+    `<div class="insight-item"><span class="insight-dot">1</span><span>Directional signal: <strong>${signal}</strong> at ${confidence.toFixed(1)}% model confidence.</span></div>`,
+    `<div class="insight-item"><span class="insight-dot">2</span><span>Model probabilities: ${probUp.toFixed(1)}% up vs ${probDown.toFixed(1)}% down.</span></div>`,
+    `<div class="insight-item"><span class="insight-dot">3</span><span>Risk reference: stop loss ${d.stop_loss == null ? 'not supplied' : Number(d.stop_loss).toFixed(5)}; take profit ${d.take_profit == null ? 'not supplied' : Number(d.take_profit).toFixed(5)}.</span></div>`
+  ].join('');
 }
 
-function addToHistory(d) {
-  history.unshift(d);
-  if (history.length > 10) history.pop();
+
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+}
+
+function renderHistoryItems(items) {
   const list = document.getElementById('history-list');
-  list.innerHTML = history.map(h => {
-    const signal = ['BUY','SELL','FLAT'].includes(h.signal) ? h.signal : 'UNKNOWN';
-    const timestamp = String(h.timestamp || '—');
-    return `
-    <div class="history-item">
-      <div>
-        <div class="h-sig ${signal}">${signal}</div>
-        <div class="h-time">${timestamp.length > 10 ? timestamp.slice(11,16) : '—'}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-weight:600">${Number(h.close || 0).toFixed(5)}</div>
-        <div style="font-size:10px; color:var(--text-dim)">${Number(h.confidence || 0).toFixed(1)}%</div>
-      </div>
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-history">No saved predictions found yet. Run a prediction to get started.</div>';
+    return;
+  }
+  list.innerHTML = items.slice(0,5).map(h => {
+    const signal = ['BUY','SELL','FLAT'].includes(h.signal || h.trade_signal) ? (h.signal || h.trade_signal) : 'UNKNOWN';
+    const timestamp = String(h.timestamp || h.candle_timestamp || h.run_timestamp || '');
+    const closeValue = Number(h.close != null ? h.close : h.close_price);
+    const confidence = Number(h.confidence || 0);
+    const pair = h.pair || document.getElementById('pair-select').value || 'Market';
+    const pairLabel = pair.replace('=X','').replace('-','/');
+    return `<div class="history-item">
+      <div><div class="history-market">${escapeHtml(pairLabel)}</div><div class="history-meta">${escapeHtml(timestamp.replace('T',' ').slice(0,16) || 'Timestamp unavailable')}</div></div>
+      <div class="history-result"><span class="h-sig ${signal}">${signal}</span><div class="h-time">${Number.isFinite(closeValue) && closeValue !== 0 ? closeValue.toFixed(4) : 'Price —'} · ${confidence.toFixed(1)}%</div></div>
     </div>`;
   }).join('');
 }
+
+function addToHistory(d) {
+  const pair = document.getElementById('pair-select');
+  history.unshift({
+    ...d,
+    pair: pair && pair.selectedOptions.length ? pair.selectedOptions[0].textContent : ''
+  });
+  if (history.length > 10) history.pop();
+  renderHistoryItems(history);
+}
+
+async function loadSavedHistory() {
+  try {
+    const response = await fetch(window.assetPredictorApiUrl('/api/history?limit=5'));
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (!Array.isArray(payload.runs) || !payload.runs.length || history.length) return;
+    history = payload.runs.map(run => ({
+      signal: run.trade_signal,
+      confidence: run.confidence,
+      close: run.close_price,
+      timestamp: run.candle_timestamp || run.run_timestamp,
+      run_timestamp: run.run_timestamp,
+      pair: run.pair
+    }));
+    renderHistoryItems(history);
+    document.getElementById('history-storage-status').textContent = 'Saved history';
+  } catch(e) {
+    // Dashboard remains usable even when history storage is offline.
+  }
+}
+
+async function loadHistoryStorageStatus() {
+  try {
+    const response = await fetch(window.assetPredictorApiUrl('/api/db_status'));
+    if (!response.ok) return;
+    const info = await response.json();
+    document.getElementById('history-storage-status').textContent =
+      info.cloud_sync_enabled ? 'Cloud sync configured' : info.connected ? 'Local storage' : 'Storage unavailable';
+  } catch(e) {}
+}
+
+
 
 function setAutoRefresh() {
   clearInterval(autoTimer);
   const secs = parseInt(document.getElementById('auto-select').value, 10);
   if (!secs || document.getElementById('refresh-btn').disabled) return;
   autoTimer = setInterval(fetchSignal, secs * 1000);
+}
+
+function renderMarketCoverage(pairs) {
+  const forexCount = pairs.filter(pair => !pair.includes('-')).length;
+  const cryptoCount = pairs.filter(pair => pair.includes('-')).length;
+  const total = pairs.length;
+  const coverage = document.getElementById('coverage-list');
+  coverage.innerHTML = [
+    {icon:'⌁',name:'Forex & currencies',count:forexCount},
+    {icon:'◈',name:'Crypto assets',count:cryptoCount}
+  ].map(item => `<div class="coverage-item"><span class="coverage-icon">${item.icon}</span><span><strong>${item.name}</strong><small>${item.count} trained pairs</small></span></div>`).join('');
+  document.getElementById('sidebar-model-count').textContent = total + ' trained pairs';
+  document.getElementById('hero-model-count').textContent = total;
+  document.getElementById('stat-model-count').textContent = total;
+  document.getElementById('model-inventory-count').textContent = total + ' models';
+  document.getElementById('stat-backend-status').textContent = 'Connected';
 }
 
 async function initApp() {
@@ -695,9 +805,7 @@ async function initApp() {
       opt.textContent = label;
       sel.appendChild(opt);
     });
-
-    document.getElementById('model-inventory-count').textContent =
-      `${sel.options.length} verified model${sel.options.length === 1 ? '' : 's'}`;
+    renderMarketCoverage(pairs.filter(key => allPairs[key]));
     if (sel.options.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
@@ -717,18 +825,18 @@ async function initApp() {
 
   const cfg = await loadAppConfig();
   if (cfg && !cfg.model_exists && sel.options.length && sel.options[0].value) {
-    // If the configured market has no verified model but another model is ready,
-    // switch only to a model that passed artifact validation.
     sel.value = sel.options[0].value;
     try { await onPairChange(); } catch(e) {}
   }
 
-  // Theme can be persisted locally without changing server config.
   let theme = 'dark';
   try { theme = localStorage.getItem('asset-predictor-theme') || 'dark'; } catch(e) {}
   applyTheme(theme);
+  await Promise.all([loadSavedHistory(),loadHistoryStorageStatus()]);
   setAutoRefresh();
 }
+
+
 
 initApp();
 </script>
