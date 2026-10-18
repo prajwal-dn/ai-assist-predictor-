@@ -200,6 +200,7 @@ def load_trained_pairs():
     with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     model_dir = cfg.get("paths", {}).get("models", "models/")
+    model_dir = model_dir if os.path.isabs(model_dir) else os.path.join(BASE_DIR, model_dir)
     pairs = []
     unavailable = {}
     if os.path.isdir(model_dir):
@@ -265,10 +266,14 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/history":
             if not _db_available:
-                self.send_json({"error": "Database not connected"}, 503)
+                self.send_json({"error": "History storage is unavailable. Check the application logs."}, 503)
                 return
             pair_filter = qs.get("pair", [None])[0]
-            limit = int(qs.get("limit", [50])[0])
+            try:
+                limit = max(1, min(int(qs.get("limit", ["50"])[0]), 200))
+            except (TypeError, ValueError):
+                self.send_json({"error": "Invalid history limit. Use a number from 1 to 200."}, 400)
+                return
             runs = get_recent_runs(limit=limit, pair_filter=pair_filter)
             self.send_json({"runs": runs})
 
@@ -279,7 +284,19 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(get_run_stats())
 
         elif path == "/api/db_status":
-            self.send_json({"connected": _db_available})
+            cloud_sync_enabled = bool(os.environ.get("HF_TOKEN"))
+            self.send_json({
+                "connected": _db_available,
+                "storage": "local-json",
+                "cloud_sync_enabled": cloud_sync_enabled,
+                "message": (
+                    "Local history is available; Hugging Face sync is enabled."
+                    if _db_available and cloud_sync_enabled else
+                    "Local history is available; cloud sync is not configured."
+                    if _db_available else
+                    "History storage is unavailable."
+                )
+            })
 
         else:
             self.send_response(404)
