@@ -394,6 +394,32 @@
     *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
   }
 
+
+  /* Visual system aligned with the redesigned dashboard */
+  :root { --bg:#050915; --card-bg:rgba(10,21,40,.94); --card-bg-solid:#0d1b32; --border:rgba(107,150,230,.17); --border-hover:rgba(94,139,245,.36); --accent:#3988ff; --accent-glow:rgba(57,136,255,.12); --text:#f3f7ff; --text-dim:#9aafd2; --text-muted:#7087ad; --buy:#19d6a1; --buy-bg:rgba(25,214,161,.10); --buy-border:rgba(25,214,161,.24); --sell:#ff4f78; --sell-bg:rgba(255,79,120,.10); --sell-border:rgba(255,79,120,.24); --flat:#ffbd4a; --flat-bg:rgba(255,189,74,.10); --flat-border:rgba(255,189,74,.24); }
+  body.theme-light { --bg:#f3f6fc; --card-bg:rgba(255,255,255,.94); --card-bg-solid:#fff; --border:rgba(38,68,125,.13); --border-hover:rgba(52,103,225,.30); --accent:#286ff2; --accent-glow:rgba(40,111,242,.09); --text:#0b1733; --text-dim:#5e6f91; --text-muted:#7d8cac; --buy:#079b75; --buy-bg:rgba(7,155,117,.09); --buy-border:rgba(7,155,117,.22); --sell:#df315f; --sell-bg:rgba(223,49,95,.08); --sell-border:rgba(223,49,95,.22); --flat:#b9780b; --flat-bg:rgba(185,120,11,.08); --flat-border:rgba(185,120,11,.22); }
+  body { background-image:radial-gradient(circle at 82% -8%,rgba(52,104,244,.09),transparent 35%),radial-gradient(circle at 0% 80%,rgba(117,70,234,.05),transparent 32%); }
+  .glass { border-radius:15px; box-shadow:0 14px 40px rgba(0,0,0,.08); }
+  .header { padding-bottom:16px; border-bottom:1px solid var(--border); }
+  .logo-group h1 { font-size:clamp(18px,2vw,24px); }
+  .nav-link { border-radius:11px; }
+  .nav-link.active { color:var(--text); border-color:rgba(112,91,255,.45); background:linear-gradient(110deg,rgba(58,95,255,.18),rgba(131,72,242,.08)); }
+  .theme-toggle { min-height:37px; display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 11px; border:1px solid var(--border); border-radius:11px; background:var(--card-bg-solid); color:var(--text-dim); cursor:pointer; font:600 10px 'Inter',sans-serif; transition:.2s; }
+  .theme-toggle:hover { color:var(--text); border-color:var(--border-hover); transform:translateY(-1px); }
+  .stat-card { border-radius:15px; background:linear-gradient(145deg,var(--card-bg),var(--card-bg-solid)); }
+  .controls-bar { gap:10px; padding:13px; border:1px solid var(--border); border-radius:14px; background:var(--card-bg); }
+  select,.search-input { border-radius:10px; min-height:40px; }
+  .btn { border-radius:10px; }
+  .table-container { border:1px solid var(--border); border-radius:16px; box-shadow:0 18px 48px rgba(0,0,0,.08); }
+  .table-container .glass { box-shadow:none; border:0; border-radius:15px; }
+  thead th { letter-spacing:.6px; }
+  tbody tr:hover { background:rgba(57,136,255,.055); }
+  .db-badge.connected { color:var(--buy); background:var(--buy-bg); border-color:var(--buy-border); }
+  .db-badge.disconnected { color:var(--sell); background:var(--sell-bg); border-color:var(--sell-border); }
+  body.theme-light .glass, body.theme-light .table-container, body.theme-light .controls-bar { box-shadow:0 14px 40px rgba(32,58,105,.045); }
+  body.theme-light .nav-link.active { color:var(--accent); }
+  @media(max-width:640px) { body{padding:13px}.header{align-items:flex-start}.logo-group{flex-wrap:wrap;gap:10px}.nav-links{flex-wrap:wrap}.controls-bar{padding:9px}.controls-bar select,.controls-bar .btn{flex:1 1 100%;width:100%}.theme-toggle{padding:8px 10px} }
+
 </style>
 </head>
 <body>
@@ -410,6 +436,7 @@
     <div class="nav-links">
       <a href="/" class="nav-link">DASHBOARD</a>
       <a href="/history" class="nav-link active">HISTORY</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Switch color theme">☼ LIGHT MODE</button>
     </div>
   </div>
 </div>
