@@ -289,6 +289,21 @@ class Handler(BaseHTTPRequestHandler):
             with open(html_path, "rb") as f:
                 self.wfile.write(f.read())
 
+        elif path == "/health":
+            # Liveness check for Hugging Face Spaces / Docker deployments.
+            # A live process can still be degraded if model artifacts are unavailable.
+            cfg = load_app_config()
+            model_ready = bool(cfg["model_exists"])
+            self.send_json({
+                "status": "ok" if model_ready else "degraded",
+                "service": "ai-asset-predictor",
+                "model_ready": model_ready,
+                "model_status": cfg["model_status"],
+                "history_storage_available": _db_available,
+                "history_storage": "local-json",
+                "cloud_sync_configured": bool(os.environ.get("HF_TOKEN")),
+            })
+
         elif path == "/api/predict":
             self.send_json(run_predict())
 
