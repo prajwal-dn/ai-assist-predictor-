@@ -9,7 +9,7 @@ Usage:
 Then open: http://localhost:7860
 """
 
-import os, sys, json, subprocess, time, yaml, threading
+import os, sys, json, subprocess, time, yaml, threading, re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -26,6 +26,36 @@ _train_lock = threading.Lock()
 _db_available = False
 
 
+def is_git_lfs_pointer(path: str) -> bool:
+    """Return True when a model artifact is only a Git LFS pointer placeholder."""
+    try:
+        with open(path, "rb") as f:
+            header = f.read(256)
+        return header.startswith(b"version https://git-lfs.github.com/spec/v1")
+    except OSError:
+        return False
+
+
+def artifact_status(pair: str, model_dir: str) -> dict:
+    """Validate all three model artifacts without deserializing them."""
+    paths = {
+        "model": os.path.join(model_dir, f"{pair}_xgboost.pkl"),
+        "scaler": os.path.join(model_dir, f"{pair}_scaler.pkl"),
+        "features": os.path.join(model_dir, f"{pair}_feature_cols.pkl"),
+    }
+    missing = [kind for kind, path in paths.items() if not os.path.isfile(path)]
+    pointers = [kind for kind, path in paths.items() if os.path.isfile(path) and is_git_lfs_pointer(path)]
+    if missing:
+        return {"ready": False, "reason": "Missing model artifacts: " + ", ".join(missing)}
+    if pointers:
+        return {
+            "ready": False,
+            "reason": "Git LFS placeholder files detected for: " + ", ".join(pointers)
+                + ". Pull/download the actual model artifacts or retrain the selected pair."
+        }
+    return {"ready": True, "reason": ""}
+
+
 def load_app_config():
     with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -38,7 +68,8 @@ def load_app_config():
 
     pair_key = pair.replace("=X", "").lower()
     model_dir = cfg["paths"]["models"]
-    model_exists = os.path.exists(os.path.join(model_dir, f"{pair_key}_xgboost.pkl"))
+    status = artifact_status(pair_key, model_dir)
+    model_exists = status["ready"]
 
     # Determine TradingView symbol based on asset class (crypto contains hyphen)
     tv_symbol = pair_code.replace("-", "")
@@ -57,6 +88,7 @@ def load_app_config():
         "tradingview_symbol": tradingview_symbol,
         "tradingview_interval": interval_map.get(timeframe, "60"),
         "model_exists": model_exists,
+        "model_status": status["reason"] if not model_exists else "Model artifacts detected",
     }
 
 
@@ -137,10 +169,17 @@ def run_predict():
             try: data["take_profit"] = float(l.split(":")[-1].strip())
             except: pass
 
-    # Convert raw probabilities (0-1) to percentages if needed
-    if data["prob_up"] <= 1.0 and data["prob_up"] > 0:
-        data["prob_up"]    *= 100
-        data["prob_down"]  *= 100
+    # An exited process or missing signal is not a valid prediction.
+    if result.returncode != 0 or data["signal"] == "UNKNOWN":
+        data["error"] = True
+        if not data["raw"].strip():
+            data["raw"] = "Prediction failed without diagnostic output."
+        return data
+
+    # predict.py prints probabilities as fractions (e.g. 0.63 -> 63%).
+    if 0.0 <= data["prob_up"] <= 1.0:
+        data["prob_up"] *= 100
+        data["prob_down"] *= 100
         data["confidence"] *= 100
 
     if not data["error"]:
@@ -162,11 +201,18 @@ def load_trained_pairs():
         cfg = yaml.safe_load(f)
     model_dir = cfg.get("paths", {}).get("models", "models/")
     pairs = []
-    if os.path.exists(model_dir):
+    unavailable = {}
+    if os.path.isdir(model_dir):
         for file in os.listdir(model_dir):
-            if file.endswith("_xgboost.pkl"):
-                pairs.append(file.replace("_xgboost.pkl", ""))
-    return {"trained_pairs": pairs}
+            if not file.endswith("_xgboost.pkl"):
+                continue
+            pair = file.replace("_xgboost.pkl", "")
+            status = artifact_status(pair, model_dir)
+            if status["ready"]:
+                pairs.append(pair)
+            else:
+                unavailable[pair] = status["reason"]
+    return {"trained_pairs": sorted(pairs), "unavailable_pairs": unavailable}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -256,6 +302,14 @@ class Handler(BaseHTTPRequestHandler):
             # Normalise: "EURUSD" -> "EURUSD=X", but keep "BTC-USD" or symbols that already have "=X"
             if "-" not in new_pair and not new_pair.endswith("=X") and len(new_pair) == 6:
                 new_pair = new_pair + "=X"
+            if not re.fullmatch(r"[A-Za-z0-9-]{3,12}(?:=X)?", new_pair):
+                self.send_json({"error": "Invalid market symbol."}, 400)
+                return
+            pair_key = new_pair.replace("=X", "").lower()
+            status = artifact_status(pair_key, yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml"), encoding="utf-8"))["paths"]["models"])
+            if not status["ready"]:
+                self.send_json({"error": status["reason"], "model_exists": False}, 409)
+                return
             save_pair_to_config(new_pair)
             cfg = load_app_config()
             self.send_json({"ok": True, "config": cfg})
