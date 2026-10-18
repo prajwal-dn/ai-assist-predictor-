@@ -6,6 +6,8 @@ This project is a single Python service with a Dockerfile. Keep the full backend
 
 ## Confirm the canonical Space first
 
+This GitHub repository does not currently include a Hugging Face deploy workflow. Unless you have a separate GitHub-to-Hugging-Face sync configured in your Space settings, merging this pull request into GitHub `main` will **not** automatically deploy the new code to the Space. Deploy/sync the same reviewed revision to the Space repository after merging, or configure the sync explicitly.
+
 The repository currently contains two different app subdomain references:
 - `https://praj-9035-ai-asset-predictor.hf.space` (GitHub repository homepage metadata)
 - `https://praj-9035-ai-forex-predictor.hf.space` (README live-deployment link)
@@ -14,7 +16,7 @@ Open the Space in Hugging Face and copy the actual public app URL from the Space
 
 ## Verify the deployed Space
 
-After the Space build reaches **Running**, open these URLs using the confirmed base URL:
+The new `/health` route is part of this feature branch and will only exist in the live app after these changes are deployed to the Space. After the Space build reaches **Running**, open these URLs using the confirmed base URL:
 
 1. `/` — the Asset Predictor dashboard should load.
 2. `/health` — returns JSON with app liveness, model artifact readiness, history storage, and whether cloud sync is configured.
