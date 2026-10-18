@@ -115,5 +115,14 @@ When a prediction is run, the model returns one of three outcomes:
 - History storage works locally without `HF_TOKEN`. Set a Hugging Face token as a deployment secret to enable optional dataset sync; do not commit tokens to this repository.
 - The project does not execute trades. Predictions and ATR-based stop/take-profit levels are research outputs, not guarantees of future performance.
 
+
+## ✅ Deployment Verification
+
+This project is intended to run as a complete Dockerized Python service on Hugging Face Spaces (port `7860`). After a Space is running, use its confirmed public URL to test `/`, `/health`, `/api/config`, `/api/models`, `/api/db_status`, and `/history`.
+
+**Important:** The repository homepage metadata and the live-link text above currently refer to two different Hugging Face Space subdomains. Confirm the actual URL in the Hugging Face Spaces dashboard before treating either link as canonical.
+
+See [Hugging Face Spaces deployment checklist](docs/HF_SPACE_DEPLOYMENT.md) for the smoke-test steps, expected health response, model-artifact checks, and Vercel auto-deployment shutdown instructions.
+
 ## ⚠️ Disclaimer
 **This software is for educational and research purposes only.** Foreign exchange trading carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. The authors and contributors are not responsible for any financial losses incurred while using this tool. Always practice strict risk management and test strategies on a demo account before risking real capital.
