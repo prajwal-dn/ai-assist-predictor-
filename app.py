@@ -120,10 +120,13 @@ def run_predict():
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONWARNINGS"] = "ignore"
+    # load_app_config() intentionally returns a public/runtime view and does not
+    # include the raw YAML "paths" section. Resolve artifacts from the app root
+    # instead of indexing cfg["paths"] (which caused KeyError and broke /api/predict).
+    model_dir = os.path.join(BASE_DIR, "models")
     cfg_status = artifact_status(
         cfg["pair"].replace("=X", "").lower(),
-        cfg["paths"]["models"] if os.path.isabs(cfg["paths"]["models"])
-        else os.path.join(BASE_DIR, cfg["paths"]["models"])
+        model_dir
     )
     if not cfg_status["ready"]:
         return {
