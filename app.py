@@ -2,7 +2,7 @@
 app.py
 ------
 Simple web server that serves the dashboard and runs predict.py on demand.
-All prediction runs are persisted to MariaDB.
+Prediction history is stored in local JSON with optional Hugging Face Dataset sync.
 
 Usage:
     python app.py
