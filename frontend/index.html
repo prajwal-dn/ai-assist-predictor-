@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Predictor PRO | AI Trading Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05070a;
+    --card-bg: rgba(17, 24, 39, 0.7);
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #3b82f6;
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --buy: #10b981;
+    --sell: #ef4444;
+    --flat: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  /* Glassmorphism Card */
+  .glass {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  
+  .logo-group { display: flex; align-items: center; gap: 12px; }
+  .logo-group h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+  
+  .status-pill {
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 10px #22c55e; animation: pulse 2s infinite; }
+
+  /* Main Layout */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+  }
+
+  /* Left Column: Signal & Info */
+  .side-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  .signal-box {
+    padding: 32px;
+    text-align: center;
+  }
+  .signal-label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .signal-value { font-size: 56px; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 24px; }
+  .signal-value.BUY  { color: var(--buy); text-shadow: 0 0 30px rgba(16, 185, 129, 0.3); }
+  .signal-value.SELL { color: var(--sell); text-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
+  .signal-value.FLAT { color: var(--flat); text-shadow: 0 0 30px rgba(245, 158, 11, 0.3); }
+  .signal-value.UNKNOWN { color: var(--text-dim); }
+
+  .confidence-gauge {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .conf-fill { height: 100%; background: var(--accent); transition: width 1s ease-out, background 0.3s; }
+  .conf-fill.BUY { background: var(--buy); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+  .conf-fill.SELL { background: var(--sell); box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+  .conf-fill.FLAT { background: var(--flat); box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes flashGreen { 0% { color: var(--buy); text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); } 100% { color: var(--text); text-shadow: none; } }
+  @keyframes flashRed { 0% { color: var(--sell); text-shadow: 0 0 15px rgba(239, 68, 68, 0.5); } 100% { color: var(--text); text-shadow: none; } }
+  .flash-up { animation: flashGreen 1s ease-out; }
+  .flash-down { animation: flashRed 1s ease-out; }
+
+  /* Right Column: Chart & Metrics */
+  .content-panel { display: flex; flex-direction: column; gap: 20px; }
+
+  .chart-container {
+    height: 600px;
+    overflow: hidden;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .metric-card { padding: 20px; }
+  .m-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .m-value { font-size: 20px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+  /* Controls */
+  .control-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+
+  select {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+  }
+
+
+
+  /* History List */
+  .history-list { list-style: none; margin-top: 10px; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .h-time { color: var(--text-dim); font-size: 12px; }
+  .h-sig { font-weight: 700; }
+  .h-sig.BUY { color: var(--buy); }
+  .h-sig.SELL { color: var(--sell); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  #error-box {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    background: rgba(17, 24, 39, 0.95);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-left: 4px solid var(--sell);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 320px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+  }
+  #error-box.show { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+  /* Product polish and accessible responsive layout */
+  body { padding: clamp(14px, 2.2vw, 32px); }
+  .header, .workspace-intro, .readiness-notice, .control-bar, .main-grid {
+    width: 100%; max-width: 1440px; margin-left: auto; margin-right: auto;
+  }
+  .header { gap: 18px; flex-wrap: wrap; margin-bottom: 28px; }
+  .logo-group { min-width: 0; flex-wrap: wrap; }
+  .logo-group h1 { font-size: clamp(18px, 2vw, 25px); }
+  .status-pill { white-space: nowrap; background: rgba(59,130,246,.09); color: #93c5fd; border-color: rgba(59,130,246,.24); }
+  .status-pill .dot { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,.65); }
+  .status-pill.ready { background: rgba(16,185,129,.09); color: #6ee7b7; border-color: rgba(16,185,129,.24); }
+  .status-pill.ready .dot { background: #34d399; box-shadow: 0 0 10px rgba(52,211,153,.65); }
+  .status-pill.offline { background: rgba(239,68,68,.09); color: #fca5a5; border-color: rgba(239,68,68,.24); }
+  .status-pill.offline .dot { background: #f87171; box-shadow: 0 0 10px rgba(248,113,113,.5); }
+  .header-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+  .nav-button, .theme-toggle {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    min-height:40px; padding:9px 13px; border:1px solid var(--border);
+    border-radius:10px; background:transparent; color:var(--text-dim);
+    font:600 12px 'Inter',sans-serif; text-decoration:none; cursor:pointer;
+    transition:border-color .2s, background .2s, color .2s, transform .2s;
+  }
+  .nav-button:hover, .theme-toggle:hover { border-color:var(--accent); color:var(--text); background:rgba(59,130,246,.08); }
+  .workspace-intro {
+    display:flex; align-items:flex-end; justify-content:space-between; gap:20px;
+    margin-bottom:18px; padding:24px 26px; border:1px solid var(--border);
+    border-radius:18px; background:linear-gradient(125deg, rgba(59,130,246,.11), rgba(17,24,39,.28) 55%, rgba(16,185,129,.06));
+  }
+  .eyebrow { color:#60a5fa; font-size:10px; font-weight:700; letter-spacing:1.8px; margin-bottom:9px; text-transform:uppercase; }
+  .workspace-intro h2 { font-size:clamp(23px,3vw,34px); letter-spacing:-1.1px; line-height:1.15; margin-bottom:9px; }
+  .workspace-intro p:not(.eyebrow) { max-width:700px; color:var(--text-dim); font-size:13px; }
+  .trust-note { color:var(--text-dim); font-size:11px; white-space:nowrap; border:1px solid var(--border); padding:9px 12px; border-radius:999px; }
+  .readiness-notice {
+    padding:12px 15px; margin-bottom:18px; border:1px solid rgba(59,130,246,.23);
+    background:rgba(59,130,246,.06); border-radius:12px; color:var(--text-dim);
+    font-size:12px; line-height:1.55;
+  }
+  .readiness-notice.ready { border-color:rgba(16,185,129,.22); background:rgba(16,185,129,.055); }
+  .readiness-notice.offline { border-color:rgba(239,68,68,.26); background:rgba(239,68,68,.055); color:var(--text); }
+  .control-bar { padding:14px; border:1px solid var(--border); border-radius:14px; background:rgba(17,24,39,.32); margin-bottom:18px; }
+  .btn-primary { min-height:42px; }
+  .btn-primary:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible {
+    outline:2px solid var(--accent); outline-offset:3px;
+  }
+  select { min-height:42px; max-width:100%; }
+  .main-grid { grid-template-columns:minmax(260px, 320px) minmax(0,1fr); gap:18px; }
+  .side-panel, .content-panel { min-width:0; }
+  .glass { box-shadow:0 16px 42px rgba(0,0,0,.12); }
+  .chart-container { height:clamp(360px, 48vw, 560px); }
+  .metric-card { min-width:0; }
+  .m-value { overflow-wrap:anywhere; }
+  #error-box { max-width:min(440px, calc(100vw - 28px)); line-height:1.5; white-space:pre-wrap; }
+  body.theme-light {
+    --bg:#f3f6fb; --card-bg:rgba(255,255,255,.86); --border:rgba(15,23,42,.12);
+    --accent:#2563eb; --text:#111827; --text-dim:#526176;
+  }
+  body.theme-light { color:var(--text); background-image:radial-gradient(circle at 0% 0%,rgba(37,99,235,.09),transparent 45%),radial-gradient(circle at 100% 100%,rgba(5,150,105,.06),transparent 45%); }
+  body.theme-light .glass, body.theme-light .control-bar { background:rgba(255,255,255,.78); }
+  body.theme-light select { background:#fff; color:var(--text); }
+  body.theme-light .workspace-intro { background:linear-gradient(125deg,rgba(37,99,235,.09),rgba(255,255,255,.9) 55%,rgba(5,150,105,.06)); }
+  body.theme-light .readiness-notice { background:rgba(37,99,235,.055); }
+  body.theme-light .status-pill { color:#1d4ed8; }
+  body.theme-light .status-pill.ready { color:#047857; }
+  body.theme-light .status-pill.offline { color:#b91c1c; }
+  body.theme-light .btn-primary { background:#2563eb; }
+  body.theme-light #error-box { background:rgba(255,255,255,.97); }
+  @media (max-width: 1050px) {
+    .main-grid { grid-template-columns:1fr; }
+    .side-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; }
+    .side-panel > .glass:last-child { grid-column:1/-1; }
+    .chart-container { height:420px; }
+  }
+  @media (max-width: 640px) {
+    body { padding:12px; }
+    .header { align-items:flex-start; margin-bottom:18px; }
+    .header-actions { width:100%; justify-content:space-between; }
+    .workspace-intro { padding:19px; align-items:flex-start; flex-direction:column; }
+    .trust-note { white-space:normal; }
+    .control-bar { padding:10px; gap:8px; }
+    .control-bar select, .control-bar button { flex:1 1 100%; width:100%; }
+    .side-panel { display:flex; }
+    .signal-box { padding:24px; }
+    .signal-value { font-size:48px; }
+    .chart-container { height:340px; }
+    .metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .metric-card { padding:14px; }
+    .m-value { font-size:17px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-group">
+    <h1>ASSET PREDICTOR <span style="font-weight:300; opacity:0.5">PRO</span></h1>
+    <div class="status-pill" id="service-status" role="status" aria-live="polite"><div class="dot"></div><span id="service-status-text">CHECKING MODEL</span></div>
+  </div>
+  <div class="header-actions">
+    <a href="/history" class="nav-button">↗ Run history</a>
+    <button class="theme-toggle" type="button" id="theme-toggle" onclick="toggleTheme()" aria-label="Switch color theme">☼ Light mode</button>
+    <div class="pair-badge" id="pair-display" style="font-family:'JetBrains Mono'; color:var(--text-dim)">LOADING MARKET</div>
+  </div>
+</div>
+
+<div id="error-box" role="alert" aria-live="assertive"></div>
+
+<section class="workspace-intro" aria-labelledby="workspace-title">
+  <div>
+    <p class="eyebrow">AI MARKET ANALYSIS</p>
+    <h2 id="workspace-title">Market intelligence, without the noise.</h2>
+    <p>Explore model-generated directional signals alongside price context and volatility-based risk levels. Predictions are research outputs, not guarantees.</p>
+  </div>
+  <div class="trust-note">Research use only · No trade execution</div>
+</section>
+<div class="readiness-notice" id="readiness-notice" role="status" aria-live="polite">Checking model artifacts and application readiness…</div>
+
+<div class="control-bar">
+  <select id="pair-select" onchange="onPairChange()" style="font-family:'JetBrains Mono'; font-weight:600;">
+  </select>
+  <button class="btn-primary" id="refresh-btn" onclick="fetchSignal()">RUN PREDICTION</button>
+  <select id="auto-select" onchange="setAutoRefresh()">
+    <option value="0">Auto-Refresh: Off</option>
+    <option value="300">Every 5 Min</option>
+    <option value="3600" selected>Every Hour</option>
+  </select>
+  <span id="model-inventory-count" style="font-size:12px;color:var(--text-dim)"></span>
+</div>
+
+
+<div class="main-grid">
+  <!-- Left Side -->
+  <div class="side-panel">
+    <div class="glass signal-box">
+      <div class="signal-label">Current Analysis</div>
+      <div class="signal-label" id="model-market-label" style="font-size:10px; margin-bottom:18px">MODEL MARKET</div>
+      <div class="signal-value UNKNOWN" id="signal-val" aria-live="polite">—</div>
+      <p id="signal-caption" style="font-size:12px;color:var(--text-dim);margin:-12px 0 20px">Run an analysis to see a model signal.</p>
+      
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim)">
+        <span>CONFIDENCE</span>
+        <span id="conf-pct">0%</span>
+      </div>
+      <div class="confidence-gauge">
+        <div class="conf-fill" id="conf-fill" style="width: 0%"></div>
+      </div>
+      
+      <div style="margin-top:24px; padding-top:24px; border-top:1px solid var(--border)">
+        <div class="signal-label" style="font-size:10px">Market Price</div>
+        <div class="m-value" id="close-val" style="font-size:28px">0.00000</div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:20px">
+      <div class="m-label">Risk Protocol</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+        <div>
+          <div class="signal-label" style="font-size:9px">Stop Loss</div>
+          <div class="m-value" id="sl-val" style="font-size:15px; color:var(--sell)">—</div>
+        </div>
+        <div>
+          <div class="signal-label" style="font-size:9px">Take Profit</div>
+          <div class="m-value" id="tp-val" style="font-size:15px; color:var(--buy)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:20px; flex:1; overflow-y:auto">
+      <div class="m-label">Signal History</div>
+      <div class="history-list" id="history-list">
+        <div style="color:var(--text-dim); font-size:12px; text-align:center; margin-top:20px">Waiting for first signal...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side -->
+  <div class="content-panel">
+    <div class="glass chart-container">
+      <div style="padding:12px 16px; font-size:11px; color:var(--text-dim); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:8px;">
+        <span>MARKET CONTEXT · TRADINGVIEW</span><span>Chart feed is separate from the model's prediction data</span>
+      </div>
+      <!-- TradingView Chart via iframe -->
+      <iframe id="tv-chart" title="TradingView market context chart"
+        src="https://www.tradingview.com/widgetembed/?symbol=FX%3AEURUSD&interval=60&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0&frameElementId=tv-chart"
+        style="width:100%;height:calc(100% - 40px);border:none;"
+        allowtransparency="true"
+        scrolling="no">
+      </iframe>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="glass metric-card">
+        <div class="m-label">Bullish Probability</div>
+        <div class="m-value" id="prob-up" style="color:var(--buy)">0.0%</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="m-label">Bearish Probability</div>
+        <div class="m-value" id="prob-down" style="color:var(--sell)">0.0%</div>
+      </div>
+      <div class="glass metric-card">
+        <div class="m-label">Analysis Time</div>
+        <div class="m-value" id="time-val" style="font-size:14px">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/api-config.js"></script>
+<script>
+let history = [];
+let autoTimer = null;
+let errorTimeout = null;
+
+function setServiceStatus(label, state, detail) {
+  const pill = document.getElementById('service-status');
+  const labelEl = document.getElementById('service-status-text');
+  const notice = document.getElementById('readiness-notice');
+  pill.className = 'status-pill' + (state ? ' ' + state : '');
+  labelEl.textContent = String(label || 'STATUS UNKNOWN').toUpperCase();
+  if (detail) notice.textContent = detail;
+  notice.className = 'readiness-notice' + (state ? ' ' + state : '');
+}
+
+function applyTheme(theme) {
+  const light = theme === 'light';
+  document.body.classList.toggle('theme-light', light);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.textContent = light ? '☾ Dark mode' : '☼ Light mode';
+    btn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  try { localStorage.setItem('asset-predictor-theme', light ? 'light' : 'dark'); } catch(e) {}
+  const frame = document.getElementById('tv-chart');
+  if (frame && frame.src) {
+    const url = new URL(frame.src);
+    url.searchParams.set('theme', light ? 'light' : 'dark');
+    frame.src = url.toString();
+  }
+}
+
+function toggleTheme() {
+  applyTheme(document.body.classList.contains('theme-light') ? 'dark' : 'light');
+}
+
+try {
+  const savedTheme = localStorage.getItem('asset-predictor-theme');
+  if (savedTheme === 'light') document.body.classList.add('theme-light');
+} catch(e) {}
+
+function showError(msg) {
+  const err = document.getElementById('error-box');
+  err.textContent = 'System notification: ' + String(msg || 'An unexpected error occurred.').slice(0, 700);
+  err.classList.add('show');
+  clearTimeout(errorTimeout);
+  errorTimeout = setTimeout(() => { err.classList.remove('show'); }, 5000);
+}
+
+function loadChart(symbol = "FX:EURUSD", interval = "60") {
+  const encoded = encodeURIComponent(symbol);
+  document.getElementById('tv-chart').src =
+    `https://www.tradingview.com/widgetembed/?symbol=${encoded}&interval=${interval}&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0`;
+}
+
+async function loadAppConfig() {
+  try {
+    const res = await fetch(window.assetPredictorApiUrl('/api/config'));
+    if (!res.ok) throw new Error('Could not load application configuration.');
+    const cfg = await res.json();
+
+    document.getElementById('pair-display').textContent =
+      `${cfg.pair_code} · ${String(cfg.timeframe || '').toUpperCase()} · ${cfg.forecast_horizon}H HORIZON`;
+    document.getElementById('model-market-label').textContent = `${cfg.pair_code} MODEL`;
+    loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
+
+    const sel = document.getElementById('pair-select');
+    if (sel && [...sel.options].some(option => option.value === cfg.pair)) sel.value = cfg.pair;
+
+    const runBtn = document.getElementById('refresh-btn');
+    if (runBtn) runBtn.disabled = !cfg.model_exists || !sel || sel.disabled;
+    if (cfg.model_exists) {
+      setServiceStatus(
+        'Artifacts present',
+        'ready',
+        'Model files are present. Full model loading and market-data availability are verified when you run a prediction.'
+      );
+    } else {
+      setServiceStatus(
+        'Model unavailable',
+        'offline',
+        cfg.model_status || 'No verified model files were found. Download the actual model artifacts with Git LFS or retrain a model.'
+      );
+    }
+    return cfg;
+  } catch(e) {
+    document.getElementById('pair-display').textContent = 'CONFIG UNAVAILABLE';
+    const btn = document.getElementById('refresh-btn');
+    if (btn) btn.disabled = true;
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load application configuration. Restart app.py and check the server logs.');
+    loadChart();
+    return null;
+  }
+}
+
+async function onPairChange() {
+  const pair = document.getElementById('pair-select').value;
+  document.getElementById('error-box').classList.remove('show');
+
+  try {
+    const response = await fetch(window.assetPredictorApiUrl('/api/set_pair'), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pair})
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'This market is not available.');
+    const cfg = await loadAppConfig();
+    document.getElementById('refresh-btn').disabled = !cfg.model_exists;
+    const val = document.getElementById('signal-val');
+    val.textContent = '—';
+    val.className = 'signal-value UNKNOWN';
+    document.getElementById('conf-pct').textContent = '0%';
+    document.getElementById('conf-fill').style.width = '0%';
+    document.getElementById('conf-fill').className = 'conf-fill';
+    document.getElementById('close-val').textContent = '0.00000';
+    document.getElementById('sl-val').textContent = '—';
+    document.getElementById('tp-val').textContent = '—';
+    document.getElementById('prob-up').textContent = '0.0%';
+    document.getElementById('prob-down').textContent = '0.0%';
+    document.getElementById('time-val').textContent = '—';
+  } catch(e) {
+    showError(e.message || 'Failed to switch pair.');
+    const cfg = await loadAppConfig();
+    if (cfg && !cfg.model_exists) setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'The selected model is not ready.');
+  }
+}
+
+
+
+async function fetchSignal() {
+  const btn = document.getElementById('refresh-btn');
+  const sel = document.getElementById('pair-select');
+  document.getElementById('error-box').classList.remove('show');
+  let cfg = null;
+
+  try {
+    const configRes = await fetch(window.assetPredictorApiUrl('/api/config'));
+    if (!configRes.ok) throw new Error('Could not check model readiness.');
+    cfg = await configRes.json();
+    if (!cfg.model_exists) {
+      btn.disabled = true;
+      setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model is available for this market.');
+      showError(cfg.model_status || `No verified model for ${cfg.pair_code}. Download the actual artifact files or retrain this market.`);
+      return;
+    }
+  } catch(e) {
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not verify model readiness.');
+    showError(e.message || 'Could not verify model readiness. Check the server.');
+    btn.disabled = true;
+    return;
+  }
+
+  btn.disabled = true;
+  sel.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> ANALYZING...';
+
+  try {
+    const res = await fetch(window.assetPredictorApiUrl('/api/predict'));
+    const data = await res.json();
+    if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
+      const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
+      setServiceStatus('Prediction failed', 'offline', message);
+      showError(message);
+      return;
+    }
+
+    updateUI(data);
+    addToHistory(data);
+    setServiceStatus(
+      'Prediction complete',
+      'ready',
+      `Last analysis completed at ${new Date().toLocaleTimeString()}. The signal uses the latest candle returned by the configured data provider.`
+    );
+  } catch(e) {
+    setServiceStatus('Prediction failed', 'offline', 'The server or market-data provider did not return a usable prediction. Review the error and retry.');
+    showError(e.message || 'Connection failed. Ensure app.py is running and the data provider is reachable.');
+  } finally {
+    sel.disabled = false;
+    btn.disabled = !(cfg && cfg.model_exists && sel.options.length > 0);
+    btn.innerHTML = 'RUN PREDICTION';
+    setAutoRefresh();
+  }
+}
+
+function updateUI(d) {
+  const val = document.getElementById('signal-val');
+  val.textContent = d.signal;
+  val.className = 'signal-value ' + d.signal;
+  const caption = document.getElementById('signal-caption');
+  if (caption) caption.textContent = d.signal === 'BUY' ? 'Model indicates a bullish direction.' :
+    d.signal === 'SELL' ? 'Model indicates a bearish direction.' :
+    'No directional edge above the configured confidence threshold.';
+
+  document.getElementById('conf-pct').textContent = Number(d.confidence || 0).toFixed(1) + '%';
+  const confFill = document.getElementById('conf-fill');
+  confFill.style.width = d.confidence + '%';
+  confFill.className = 'conf-fill ' + d.signal;
+  
+  const closeEl = document.getElementById('close-val');
+  const oldVal = parseFloat(closeEl.textContent);
+  closeEl.textContent = d.close.toFixed(5);
+  closeEl.classList.remove('flash-up', 'flash-down');
+  void closeEl.offsetWidth; // trigger reflow
+  if (d.close > oldVal) closeEl.classList.add('flash-up');
+  else if (d.close < oldVal) closeEl.classList.add('flash-down');
+  
+  document.getElementById('sl-val').textContent = d.stop_loss ? d.stop_loss.toFixed(5) : '—';
+  document.getElementById('tp-val').textContent = d.take_profit ? d.take_profit.toFixed(5) : '—';
+  document.getElementById('prob-up').textContent = Number(d.prob_up || 0).toFixed(1) + '%';
+  document.getElementById('prob-down').textContent = Number(d.prob_down || 0).toFixed(1) + '%';
+  document.getElementById('time-val').textContent = String(d.timestamp || '—').slice(0,16);
+}
+
+function addToHistory(d) {
+  history.unshift(d);
+  if (history.length > 10) history.pop();
+  const list = document.getElementById('history-list');
+  list.innerHTML = history.map(h => {
+    const signal = ['BUY','SELL','FLAT'].includes(h.signal) ? h.signal : 'UNKNOWN';
+    const timestamp = String(h.timestamp || '—');
+    return `
+    <div class="history-item">
+      <div>
+        <div class="h-sig ${signal}">${signal}</div>
+        <div class="h-time">${timestamp.length > 10 ? timestamp.slice(11,16) : '—'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:600">${Number(h.close || 0).toFixed(5)}</div>
+        <div style="font-size:10px; color:var(--text-dim)">${Number(h.confidence || 0).toFixed(1)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setAutoRefresh() {
+  clearInterval(autoTimer);
+  const secs = parseInt(document.getElementById('auto-select').value, 10);
+  if (!secs || document.getElementById('refresh-btn').disabled) return;
+  autoTimer = setInterval(fetchSignal, secs * 1000);
+}
+
+async function initApp() {
+  const sel = document.getElementById('pair-select');
+  const runBtn = document.getElementById('refresh-btn');
+  const allPairs = {
+    "eurusd": ["EURUSD=X", "EUR/USD"],
+    "gbpusd": ["GBPUSD=X", "GBP/USD"],
+    "usdjpy": ["USDJPY=X", "USD/JPY"],
+    "usdchf": ["USDCHF=X", "USD/CHF"],
+    "audusd": ["AUDUSD=X", "AUD/USD"],
+    "usdcad": ["USDCAD=X", "USD/CAD"],
+    "nzdusd": ["NZDUSD=X", "NZD/USD"],
+    "eurgbp": ["EURGBP=X", "EUR/GBP"],
+    "eurjpy": ["EURJPY=X", "EUR/JPY"],
+    "gbpjpy": ["GBPJPY=X", "GBP/JPY"],
+    "inrusd": ["INRUSD=X", "INR/USD"],
+    "usdinr": ["USDINR=X", "USD/INR"],
+    "btc-usd": ["BTC-USD", "BTC/USD"],
+    "eth-usd": ["ETH-USD", "ETH/USD"],
+    "sol-usd": ["SOL-USD", "SOL/USD"]
+  };
+
+  try {
+    const res = await fetch(window.assetPredictorApiUrl('/api/models'));
+    if (!res.ok) throw new Error('Could not load model inventory.');
+    const data = await res.json();
+    sel.innerHTML = '';
+    const pairs = Array.isArray(data.trained_pairs) ? data.trained_pairs : [];
+    pairs.forEach(key => {
+      if (!allPairs[key]) return;
+      const [value, label] = allPairs[key];
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('model-inventory-count').textContent =
+      `${sel.options.length} verified model${sel.options.length === 1 ? '' : 's'}`;
+    if (sel.options.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No verified models available';
+      sel.appendChild(opt);
+      sel.disabled = true;
+      runBtn.disabled = true;
+    } else {
+      sel.disabled = false;
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Model inventory unavailable</option>';
+    sel.disabled = true;
+    runBtn.disabled = true;
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load the model inventory.');
+  }
+
+  const cfg = await loadAppConfig();
+  if (cfg && !cfg.model_exists && sel.options.length && sel.options[0].value) {
+    // If the configured market has no verified model but another model is ready,
+    // switch only to a model that passed artifact validation.
+    sel.value = sel.options[0].value;
+    try { await onPairChange(); } catch(e) {}
+  }
+
+  // Theme can be persisted locally without changing server config.
+  let theme = 'dark';
+  try { theme = localStorage.getItem('asset-predictor-theme') || 'dark'; } catch(e) {}
+  applyTheme(theme);
+  setAutoRefresh();
+}
+
+initApp();
+</script>
+
+</body>
+</html>
