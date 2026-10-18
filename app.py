@@ -308,7 +308,25 @@ class Handler(BaseHTTPRequestHandler):
             })
 
         elif path == "/api/predict":
-            self.send_json(run_predict())
+            try:
+                prediction = run_predict()
+                self.send_json(prediction, 200 if not prediction.get("error") else 503)
+            except Exception as exc:
+                # Do not let prediction exceptions drop the socket and surface as
+                # a generic Railway 502. Return a diagnosable JSON response instead.
+                print(f"[PREDICTION ERROR] {type(exc).__name__}: {exc}", flush=True)
+                self.send_json({
+                    "error": True,
+                    "signal": "UNKNOWN",
+                    "prob_up": 0,
+                    "prob_down": 0,
+                    "confidence": 0,
+                    "close": 0,
+                    "timestamp": "",
+                    "stop_loss": None,
+                    "take_profit": None,
+                    "raw": f"Prediction failed: {type(exc).__name__}: {exc}",
+                }, 500)
 
         elif path == "/api/config":
             self.send_json(load_app_config())
