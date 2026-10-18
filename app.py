@@ -68,6 +68,7 @@ def load_app_config():
 
     pair_key = pair.replace("=X", "").lower()
     model_dir = cfg["paths"]["models"]
+    model_dir = model_dir if os.path.isabs(model_dir) else os.path.join(BASE_DIR, model_dir)
     status = artifact_status(pair_key, model_dir)
     model_exists = status["ready"]
 
@@ -323,7 +324,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Invalid market symbol."}, 400)
                 return
             pair_key = new_pair.replace("=X", "").lower()
-            status = artifact_status(pair_key, yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml"), encoding="utf-8"))["paths"]["models"])
+            cfg_file = yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml"), encoding="utf-8"))
+            model_dir = cfg_file["paths"]["models"]
+            model_dir = model_dir if os.path.isabs(model_dir) else os.path.join(BASE_DIR, model_dir)
+            status = artifact_status(pair_key, model_dir)
             if not status["ready"]:
                 self.send_json({"error": status["reason"], "model_exists": False}, 409)
                 return
