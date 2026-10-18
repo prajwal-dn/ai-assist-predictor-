@@ -118,11 +118,15 @@ When a prediction is run, the model returns one of three outcomes:
 
 ## ✅ Deployment Verification
 
-This project is intended to run as a complete Dockerized Python service on Hugging Face Spaces (port `7860`). After a Space is running, use its confirmed public URL to test `/`, `/health`, `/api/config`, `/api/models`, `/api/db_status`, and `/history`.
+The Python API/back-end runs as a Dockerized service on port `7860` in its backend host (Railway or Hugging Face Spaces). If the frontend is hosted separately on Vercel, it must be configured to call the backend's public URL rather than same-origin `/api/...` paths. After deployment, use the backend's confirmed public URL to test `/health`, `/api/config`, `/api/models`, and `/api/db_status`; test `/` and `/history` on whichever service serves the pages.
 
 **Important:** The repository homepage metadata and the live-link text above currently refer to two different Hugging Face Space subdomains. Confirm the actual URL in the Hugging Face Spaces dashboard before treating either link as canonical.
 
 See [Hugging Face Spaces deployment checklist](docs/HF_SPACE_DEPLOYMENT.md) for the smoke-test steps, expected health response, model-artifact checks, and Vercel auto-deployment shutdown instructions.
+
+### Hosting topology note
+
+The repository currently contains a Python backend and HTML pages at its root. A separate Vercel frontend + Railway backend deployment needs an explicit static frontend root/build and a Railway API base URL; these are documented but depend on confirming the actual Railway public domain.
 
 ## ⚠️ Disclaimer
 **This software is for educational and research purposes only.** Foreign exchange trading carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. The authors and contributors are not responsible for any financial losses incurred while using this tool. Always practice strict risk management and test strategies on a demo account before risking real capital.
