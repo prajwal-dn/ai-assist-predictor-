@@ -336,7 +336,7 @@
     <option value="300">Every 5 Min</option>
     <option value="3600" selected>Every Hour</option>
   </select>
-  <span id="countdown" style="font-size:12px; color:var(--text-dim); font-family:'JetBrains Mono'"></span>
+  <span id="model-inventory-count" style="font-size:12px;color:var(--text-dim)"></span>
 </div>
 
 
@@ -475,24 +475,38 @@ function loadChart(symbol = "FX:EURUSD", interval = "60") {
 async function loadAppConfig() {
   try {
     const res = await fetch('/api/config');
+    if (!res.ok) throw new Error('Could not load application configuration.');
     const cfg = await res.json();
+
     document.getElementById('pair-display').textContent =
-      `AI MODEL: ${cfg.pair_code} - ${cfg.timeframe.toUpperCase()} DATA - ${cfg.forecast_horizon}H HORIZON`;
-    document.getElementById('model-market-label').textContent = `${cfg.pair_code} AI MODEL`;
+      `${cfg.pair_code} · ${String(cfg.timeframe || '').toUpperCase()} · ${cfg.forecast_horizon}H HORIZON`;
+    document.getElementById('model-market-label').textContent = `${cfg.pair_code} MODEL`;
     loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
 
-    // Sync pair selector
     const sel = document.getElementById('pair-select');
-    if (sel) sel.value = cfg.pair;
+    if (sel && [...sel.options].some(option => option.value === cfg.pair)) sel.value = cfg.pair;
 
-
-
+    const runBtn = document.getElementById('refresh-btn');
+    if (runBtn) runBtn.disabled = !cfg.model_exists || !sel || sel.disabled;
+    if (cfg.model_exists) {
+      setServiceStatus(
+        'Artifacts present',
+        'ready',
+        'Model files are present. Full model loading and market-data availability are verified when you run a prediction.'
+      );
+    } else {
+      setServiceStatus(
+        'Model unavailable',
+        'offline',
+        cfg.model_status || 'No verified model files were found. Download the actual model artifacts with Git LFS or retrain a model.'
+      );
+    }
     return cfg;
   } catch(e) {
     document.getElementById('pair-display').textContent = 'CONFIG UNAVAILABLE';
     const btn = document.getElementById('refresh-btn');
     if (btn) btn.disabled = true;
-    setServiceStatus('Service unavailable', 'offline', 'Could not load application configuration. Restart app.py and check the server logs.');
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load application configuration. Restart app.py and check the server logs.');
     loadChart();
     return null;
   }
@@ -537,16 +551,25 @@ async function fetchSignal() {
   const btn = document.getElementById('refresh-btn');
   const sel = document.getElementById('pair-select');
   document.getElementById('error-box').classList.remove('show');
+  let cfg = null;
 
   try {
-    const cfg = await (await fetch('/api/config')).json();
+    const configRes = await fetch('/api/config');
+    if (!configRes.ok) throw new Error('Could not check model readiness.');
+    cfg = await configRes.json();
     if (!cfg.model_exists) {
+      btn.disabled = true;
       setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model is available for this market.');
-      showError(cfg.model_status || `No verified model for ${cfg.pair_code}. Download model artifacts or retrain the pair.`);
+      showError(cfg.model_status || `No verified model for ${cfg.pair_code}. Download the actual artifact files or retrain this market.`);
       return;
     }
-  } catch(e) {}
-  
+  } catch(e) {
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not verify model readiness.');
+    showError(e.message || 'Could not verify model readiness. Check the server.');
+    btn.disabled = true;
+    return;
+  }
+
   btn.disabled = true;
   sel.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> ANALYZING...';
@@ -554,22 +577,28 @@ async function fetchSignal() {
   try {
     const res = await fetch('/api/predict');
     const data = await res.json();
-
-    if (data.error) {
-      showError(data.raw || "Internal execution error.");
+    if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
+      const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
+      setServiceStatus('Prediction failed', 'offline', message);
+      showError(message);
       return;
     }
 
     updateUI(data);
     addToHistory(data);
-    setServiceStatus('Prediction complete', 'ready', `Last analysis completed at ${new Date().toLocaleTimeString()}. Model output is based on the latest candle returned by the configured data provider.`);
+    setServiceStatus(
+      'Prediction complete',
+      'ready',
+      `Last analysis completed at ${new Date().toLocaleTimeString()}. The signal uses the latest candle returned by the configured data provider.`
+    );
   } catch(e) {
-    setServiceStatus('Prediction failed', 'offline', 'The server or market-data provider did not return a usable prediction. Review the error details and retry.');
+    setServiceStatus('Prediction failed', 'offline', 'The server or market-data provider did not return a usable prediction. Review the error and retry.');
     showError(e.message || 'Connection failed. Ensure app.py is running and the data provider is reachable.');
   } finally {
-    btn.disabled = false;
     sel.disabled = false;
-    btn.innerHTML = "RUN PREDICTION";
+    btn.disabled = !(cfg && cfg.model_exists && sel.options.length > 0);
+    btn.innerHTML = 'RUN PREDICTION';
+    setAutoRefresh();
   }
 }
 
@@ -666,6 +695,8 @@ async function initApp() {
       sel.appendChild(opt);
     });
 
+    document.getElementById('model-inventory-count').textContent =
+      `${sel.options.length} verified model${sel.options.length === 1 ? '' : 's'}`;
     if (sel.options.length === 0) {
       const opt = document.createElement('option');
       opt.value = '';
