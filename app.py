@@ -324,7 +324,7 @@ class Handler(BaseHTTPRequestHandler):
                 "storage": "local-json",
                 "cloud_sync_enabled": cloud_sync_enabled,
                 "message": (
-                    "Local history is available; Hugging Face sync is enabled."
+                    "Local history is available; Hugging Face sync is configured (remote sync attempts may still fail)."
                     if _db_available and cloud_sync_enabled else
                     "Local history is available; cloud sync is not configured."
                     if _db_available else
