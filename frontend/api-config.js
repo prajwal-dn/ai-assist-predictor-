@@ -7,7 +7,7 @@
  *
  * Keep the URL origin only: do not append /api or a trailing slash.
  */
-window.ASSET_PREDICTOR_API_BASE_URL = "";
+window.ASSET_PREDICTOR_API_BASE_URL = "https://asset-predictor-api-production.up.railway.app";
 
 window.assetPredictorApiUrl = function (path) {
   const base = String(window.ASSET_PREDICTOR_API_BASE_URL || "").trim().replace(/\/+$/, "");
