@@ -400,8 +400,9 @@ if __name__ == "__main__":
         print(f" ⚠️  Database initialization failed: {e}")
         _db_available = False
 
-    print(f"\n Asset Predictor Dashboard")
-    print(f" Open this in your browser: http://localhost:{PORT}")
-    print(f" Run History page:          http://localhost:{PORT}/history\n")
-    server = HTTPServer(("", PORT), Handler)
+    print(f"\n Asset Predictor Dashboard", flush=True)
+    print(f" Listening on 0.0.0.0:{PORT}", flush=True)
+    print(f" Run History route: /history", flush=True)
+    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    print(f" HTTP server listening on 0.0.0.0:{PORT}", flush=True)
     server.serve_forever()
