@@ -236,6 +236,25 @@ def parse_prediction_output(output: str, returncode: int = 0) -> dict:
     for key in ("stop_loss", "take_profit"):
         if data[key] is not None and data[key] <= 0:
             data["error"] = True
+
+    # Reject internally contradictory reports instead of showing a signal whose
+    # confidence or risk levels do not agree with the model probabilities/close.
+    if seen.issuperset({"prob_up", "prob_down", "confidence"}):
+        if abs(data["confidence"] - max(data["prob_up"], data["prob_down"])) > 1.0:
+            data["error"] = True
+        if data["signal"] == "BUY" and data["prob_up"] <= data["prob_down"]:
+            data["error"] = True
+        if data["signal"] == "SELL" and data["prob_down"] <= data["prob_up"]:
+            data["error"] = True
+    if data["signal"] in ("BUY", "SELL"):
+        if data["stop_loss"] is None or data["take_profit"] is None:
+            data["error"] = True
+        elif data["signal"] == "BUY":
+            if not (data["stop_loss"] < data["close"] < data["take_profit"]):
+                data["error"] = True
+        elif not (data["take_profit"] < data["close"] < data["stop_loss"]):
+            data["error"] = True
+
     if data["error"] and not data["raw"].strip():
         data["raw"] = "Prediction failed or returned an incomplete/invalid report."
     return data
