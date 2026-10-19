@@ -472,9 +472,10 @@ function loadChart(symbol = "FX:EURUSD", interval = "60") {
     `https://www.tradingview.com/widgetembed/?symbol=${encoded}&interval=${interval}&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0`;
 }
 
-async function loadAppConfig() {
+async function loadAppConfig(pairOverride = null) {
   try {
-    const res = await fetch('/api/config');
+    const configUrl = '/api/config' + (pairOverride ? '?pair=' + encodeURIComponent(pairOverride) : '');
+    const res = await fetch(configUrl);
     if (!res.ok) throw new Error('Could not load application configuration.');
     const cfg = await res.json();
 
@@ -517,14 +518,9 @@ async function onPairChange() {
   document.getElementById('error-box').classList.remove('show');
 
   try {
-    const response = await fetch('/api/set_pair', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({pair})
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || 'This market is not available.');
-    const cfg = await loadAppConfig();
+    const cfg = await loadAppConfig(pair);
+    if (!cfg) return;
+    if (!cfg.model_exists) throw new Error(cfg.model_status || 'This market is not available.');
     document.getElementById('refresh-btn').disabled = !cfg.model_exists;
     const val = document.getElementById('signal-val');
     val.textContent = '—';
@@ -554,7 +550,8 @@ async function fetchSignal() {
   let cfg = null;
 
   try {
-    const configRes = await fetch('/api/config');
+    const selectedPair = sel.value;
+    const configRes = await fetch('/api/config?pair=' + encodeURIComponent(selectedPair));
     if (!configRes.ok) throw new Error('Could not check model readiness.');
     cfg = await configRes.json();
     if (!cfg.model_exists) {
@@ -575,7 +572,7 @@ async function fetchSignal() {
   btn.innerHTML = '<span class="spinner"></span> ANALYZING...';
 
   try {
-    const res = await fetch('/api/predict');
+    const res = await fetch('/api/predict?pair=' + encodeURIComponent(selectedPair));
     const data = await res.json();
     if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
       const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
