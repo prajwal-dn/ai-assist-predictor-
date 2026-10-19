@@ -35,6 +35,26 @@ class FeatureEngineeringTests(unittest.TestCase):
         self.assertAlmostEqual(float(match.iloc[0]["daily_sma"]), float(np.mean(close[50:100])))
         self.assertEqual(int(match.iloc[0]["feature_schema_version"]), 2)
 
+    def test_latest_intraday_day_uses_last_completed_daily_context(self):
+        daily_dates = pd.date_range("2025-01-01", periods=180, freq="D")
+        daily_close = np.arange(1.0, 181.0)
+        daily = pd.DataFrame({"datetime": daily_dates, "close": daily_close})
+
+        # Intraday data includes the next date while the daily provider only
+        # includes the last completed bar. That new date must still get context.
+        row_dates = pd.date_range("2025-01-01", periods=181, freq="D")
+        row_close = np.arange(1.0, 182.0)
+        rows = pd.DataFrame({
+            "datetime": row_dates, "open": row_close - 0.2,
+            "high": row_close + 1, "low": row_close - 1,
+            "close": row_close, "volume": np.ones(len(row_close)),
+        })
+        features = add_features(rows, feature_config(), daily, daily_context_mode="completed")
+        newest = features.iloc[-1]
+        self.assertEqual(newest["datetime"], row_dates[-1])
+        self.assertTrue(np.isfinite(float(newest["daily_sma"])))
+        self.assertAlmostEqual(float(newest["daily_sma"]), float(np.mean(daily_close[130:180])))
+
     def test_legacy_daily_context_keeps_schema_v1(self):
         dates = pd.date_range("2025-01-01", periods=180, freq="D")
         close = np.arange(1.0, 181.0)
