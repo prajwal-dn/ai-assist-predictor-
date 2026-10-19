@@ -201,6 +201,30 @@ class MarketDataTests(unittest.TestCase):
         self.assertEqual(completed.iloc[0]["datetime"], pd.Timestamp("2025-01-01T00:00:00"))
 
     @patch("src.predict.requests.get")
+    def test_legacy_daily_context_can_retain_current_partial_bar(self, mocked_get):
+        today = pd.Timestamp.now(tz="UTC").normalize().tz_localize(None)
+        yesterday = today - pd.Timedelta(days=1)
+        def payload_row(stamp, value):
+            return {
+                "datetime": stamp.strftime("%Y-%m-%d"),
+                "open": str(value), "high": str(value + 1),
+                "low": str(value - 1), "close": str(value + 0.5),
+                "volume": "100",
+            }
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "values": [payload_row(today, 10), payload_row(yesterday, 9)]
+        }
+        mocked_get.return_value = response
+        keep_current = fetch_recent_data(
+            "EURUSD=X", "1d", {"twelvedata_api_key": "test-key"},
+            drop_incomplete=False,
+        )
+        self.assertEqual(len(keep_current), 2)
+        self.assertEqual(keep_current.iloc[-1]["datetime"], today)
+
+    @patch("src.predict.requests.get")
     def test_twelvedata_timeout_and_chronological_normalization(self, mocked_get):
         response = Mock()
         response.raise_for_status.return_value = None
