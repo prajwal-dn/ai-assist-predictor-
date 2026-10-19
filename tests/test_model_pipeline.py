@@ -118,6 +118,22 @@ class HistoryPersistenceTests(unittest.TestCase):
         self.assertEqual(backups[0].read_text(encoding="utf-8"), "{corrupt json")
         self.assertFalse(self.history_path.exists())
 
+    @patch("src.db.os.replace", side_effect=OSError("simulated disk failure"))
+    def test_failed_history_write_does_not_leave_ghost_run(self, _mock_replace):
+        db_module._cache = []
+        with self.assertRaisesRegex(OSError, "simulated disk failure"):
+            db_module.save_prediction_run(
+                {
+                    "signal": "BUY", "confidence": 70.0,
+                    "prob_up": 70.0, "prob_down": 30.0, "close": 10.0,
+                    "timestamp": "2025-01-01T00:00:00",
+                },
+                pair="EURUSD=X", timeframe="1h", horizon=1,
+            )
+        self.assertEqual(db_module._cache, [])
+        self.assertFalse(self.history_path.exists())
+        self.assertFalse(list(Path(self.tempdir.name).glob(".history-*.tmp")))
+
 
 class FeatureEngineeringTests(unittest.TestCase):
     def test_completed_daily_context_uses_previous_day_only(self):
