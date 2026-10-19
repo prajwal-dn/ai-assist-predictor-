@@ -28,7 +28,16 @@ def add_labels(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
     Add target column: 1 if close price rises over the next `horizon` candles,
     0 otherwise. Rows where the future is unknown (last N rows) are dropped.
     """
+    if not isinstance(horizon, int) or horizon < 1:
+        raise ValueError("forecast_horizon must be a positive integer number of candles.")
     df = df.copy()
+    if "datetime" in df.columns:
+        df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce", utc=True)
+        df = df.dropna(subset=["datetime"]).sort_values("datetime").drop_duplicates("datetime", keep="last")
+    df["close"] = pd.to_numeric(df["close"], errors="coerce")
+    df = df.dropna(subset=["close"]).reset_index(drop=True)
+    if len(df) <= horizon:
+        raise ValueError(f"Need more than {horizon} valid rows to create labels.")
 
     # Future close price (N candles ahead)
     df["future_close"] = df["close"].shift(-horizon)
@@ -47,14 +56,23 @@ def add_labels(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
 
 
 def split_and_save(df: pd.DataFrame, output_dir: str, pair: str,
-                   timeframe: str, test_size: float, random_seed: int):
+                   timeframe: str, test_size: float, random_seed: int, gap: int = 0):
     """
     Split chronologically (NOT random) to avoid data leakage.
     Earlier rows = train, later rows = test.
     """
+    if not 0.0 < float(test_size) < 1.0:
+        raise ValueError("test_size must be between 0 and 1.")
+    if not isinstance(gap, int) or gap < 0:
+        raise ValueError("gap must be a non-negative integer.")
     split_idx = int(len(df) * (1 - test_size))
-    train_df  = df.iloc[:split_idx].copy()
-    test_df   = df.iloc[split_idx:].copy()
+    train_end = split_idx - gap
+    if train_end < 1 or split_idx >= len(df):
+        raise ValueError("Not enough labelled rows for the requested test_size and purge gap.")
+    # Purge the final horizon rows from training so their future-price labels
+    # cannot overlap the beginning of the holdout set.
+    train_df = df.iloc[:train_end].copy()
+    test_df = df.iloc[split_idx:].copy()
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -102,6 +120,7 @@ def main():
         timeframe   = timeframe,
         test_size   = cfg["test_size"],
         random_seed = cfg["random_seed"],
+        gap         = int(horizon),
     )
     print("[DONE] labeller complete.")
 
