@@ -9,12 +9,16 @@ Usage:
 """
 
 import os
+import json
+from datetime import datetime, timezone
 import yaml
 import joblib
 import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -26,7 +30,7 @@ from sklearn.metrics import (
 
 
 # ── Columns that are NOT features ─────────────────────────────────────────────
-NON_FEATURE_COLS = ["datetime", "target", "open", "high", "low", "close", "volume"]
+NON_FEATURE_COLS = ["datetime", "target", "open", "high", "low", "close", "volume", "feature_schema_version"]
 
 
 def load_config(path: str = "config.yaml") -> dict:
@@ -48,58 +52,62 @@ def load_data(label_dir: str, pair: str, timeframe: str):
 
     train_df = pd.read_csv(train_file, parse_dates=["datetime"])
     test_df  = pd.read_csv(test_file,  parse_dates=["datetime"])
-
+    if train_df.empty or test_df.empty:
+        raise ValueError("Training and test CSV files must both contain rows.")
     print(f"[INFO] Train: {len(train_df):,} rows | Test: {len(test_df):,} rows")
     return train_df, test_df
 
 
 def train(train_df: pd.DataFrame, cfg: dict):
     feature_cols = get_feature_columns(train_df)
+    if not feature_cols:
+        raise ValueError("Training data contains no model feature columns.")
+    X_train = train_df[feature_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    y_train = pd.to_numeric(train_df["target"], errors="coerce").to_numpy()
+    if not np.isfinite(X_train).all() or not np.isfinite(y_train).all():
+        raise ValueError("Training data contains non-finite feature or target values.")
+    if len(np.unique(y_train)) < 2:
+        raise ValueError("Training data must contain both UP and DOWN target classes.")
+    horizon = max(0, int(cfg.get("forecast_horizon", 1)))
+    if len(X_train) < max(40, 4 * (horizon + 2)):
+        raise ValueError("Not enough rows for three time-series CV folds with the forecast-horizon purge gap.")
 
-    X_train = train_df[feature_cols].values
-    y_train = train_df["target"].values
-
-    # Scale features (zero mean, unit variance)
-    scaler  = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-
-    # Hyperparameter search space
     param_dist = {
-        "n_estimators":     [100, 200, 300, 500],
-        "max_depth":        [3, 5, 7, 9],
-        "learning_rate":    [0.01, 0.05, 0.1],
-        "subsample":        [0.7, 0.8, 0.9],
-        "colsample_bytree": [0.7, 0.8, 0.9],
-        "gamma":            [0, 0.1, 0.2],
+        "model__n_estimators": [100, 200, 300, 500],
+        "model__max_depth": [3, 5, 7, 9],
+        "model__learning_rate": [0.01, 0.05, 0.1],
+        "model__subsample": [0.7, 0.8, 0.9],
+        "model__colsample_bytree": [0.7, 0.8, 0.9],
+        "model__gamma": [0, 0.1, 0.2],
     }
-
-    from sklearn.model_selection import RandomizedSearchCV
-
-    base_model = XGBClassifier(
-        random_state      = cfg["random_seed"],
-        eval_metric       = "logloss",
-        use_label_encoder = False,
-        n_jobs            = -1
-    )
-
-    print(f"[INFO] Starting hyperparameter tuning (Search CV) on {len(X_train):,} samples...")
+    pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("model", XGBClassifier(
+            random_state=cfg["random_seed"],
+            eval_metric="logloss",
+            use_label_encoder=False,
+            n_jobs=-1,
+        )),
+    ])
+    # Fit the scaler inside each CV fold and never validate on earlier data
+    # using a model trained on future time periods.
+    cv = TimeSeriesSplit(n_splits=3, gap=horizon)
     search = RandomizedSearchCV(
-        base_model, 
-        param_distributions=param_dist, 
-        n_iter=15, 
-        cv=3, 
-        scoring="accuracy", 
+        pipeline,
+        param_distributions=param_dist,
+        n_iter=15,
+        cv=cv,
+        scoring="accuracy",
         verbose=1,
-        random_state=cfg["random_seed"]
+        random_state=cfg["random_seed"],
+        error_score="raise",
     )
-    
+    print(f"[INFO] Time-series tuning on {len(X_train):,} rows (purge gap={horizon}).")
     search.fit(X_train, y_train)
-    
-    model = search.best_estimator_
+    best_pipeline = search.best_estimator_
     print(f"[INFO] Best Parameters: {search.best_params_}")
-    print("[INFO] Training complete with optimized parameters.")
-
-    return model, scaler, feature_cols
+    print("[INFO] Training complete with time-series cross-validation.")
+    return best_pipeline.named_steps["model"], best_pipeline.named_steps["scaler"], feature_cols
 
 
 def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
@@ -143,21 +151,43 @@ def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
     print(f"  Recall                           : {metrics['recall']:.3f}")
     print(f"  F1 Score                         : {metrics['f1']:.3f}")
     print("----------------------------------\n")
-    print(classification_report(y_true_confident, y_pred_confident,
-                                 target_names=["DOWN", "UP"], zero_division=0))
+    print(classification_report(
+        y_true_confident, y_pred_confident, labels=[0, 1],
+        target_names=["DOWN", "UP"], zero_division=0
+    ))
 
     return metrics
 
 
-def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str):
+def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str, metadata: dict = None):
     os.makedirs(model_dir, exist_ok=True)
     model_path  = os.path.join(model_dir, f"{pair}_xgboost.pkl")
     scaler_path = os.path.join(model_dir, f"{pair}_scaler.pkl")
     cols_path   = os.path.join(model_dir, f"{pair}_feature_cols.pkl")
 
-    joblib.dump(model,        model_path)
-    joblib.dump(scaler,       scaler_path)
-    joblib.dump(feature_cols, cols_path)
+    # Replace artifacts atomically so an interrupted retrain cannot leave partial files.
+    for artifact, path in ((model, model_path), (scaler, scaler_path), (list(feature_cols), cols_path)):
+        temporary_path = path + ".tmp"
+        try:
+            joblib.dump(artifact, temporary_path)
+            os.replace(temporary_path, path)
+        finally:
+            if os.path.exists(temporary_path):
+                os.unlink(temporary_path)
+
+    if metadata is not None:
+        metadata_path = os.path.join(model_dir, f"{pair}_metadata.json")
+        payload = dict(metadata)
+        payload["feature_columns"] = list(feature_cols)
+        payload["trained_at_utc"] = datetime.now(timezone.utc).isoformat()
+        temporary_path = metadata_path + ".tmp"
+        try:
+            with open(temporary_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2, sort_keys=True)
+            os.replace(temporary_path, metadata_path)
+        finally:
+            if os.path.exists(temporary_path):
+                os.unlink(temporary_path)
 
     print(f"[INFO] Model  saved -> {model_path}")
     print(f"[INFO] Scaler saved -> {scaler_path}")
@@ -191,6 +221,13 @@ def main():
         feature_cols = feature_cols,
         model_dir    = cfg["paths"]["models"],
         pair         = pair,
+        metadata     = {
+            "model_metadata_version": 1,
+            "feature_schema_version": 1 if cfg["features"].get("daily_context_mode", "completed") == "legacy" else 2,
+            "daily_context_mode": cfg["features"].get("daily_context_mode", "completed"),
+            "timeframe": timeframe,
+            "pair": cfg["pair"],
+        },
     )
 
     print("[DONE] train_model complete.")
