@@ -36,6 +36,8 @@ def load_config(path: str = None) -> dict:
         path = os.path.join(BASE_DIR, path)
     with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid application configuration at {path}")
     pair_override = os.environ.get("ASSET_PREDICTOR_PAIR")
     if pair_override:
         pair_override = pair_override.strip().upper()
@@ -44,8 +46,13 @@ def load_config(path: str = None) -> dict:
         if not re.fullmatch(r"[A-Z0-9-]{3,12}(?:=X)?", pair_override):
             raise ValueError("ASSET_PREDICTOR_PAIR is not a valid market symbol.")
         cfg["pair"] = pair_override
-    if not isinstance(cfg, dict):
-        raise ValueError(f"Invalid application configuration at {path}")
+    if str(cfg.get("timeframe", "")).lower() not in ("1h", "4h", "1d"):
+        raise ValueError("timeframe must be one of: 1h, 4h, 1d.")
+    if isinstance(cfg.get("forecast_horizon"), bool) or not isinstance(cfg.get("forecast_horizon"), int) or cfg["forecast_horizon"] < 1:
+        raise ValueError("forecast_horizon must be a positive integer number of candles.")
+    threshold = float(cfg.get("confidence_threshold", 0.0))
+    if not math.isfinite(threshold) or not 0 < threshold < 1:
+        raise ValueError("confidence_threshold must be between 0 and 1.")
     return cfg
 
 
