@@ -198,8 +198,10 @@ def _drop_incomplete_candles(
     return completed
 
 
-def fetch_yfinance_data(pair: str, timeframe: str) -> pd.DataFrame:
-    """Fetch enough history for the requested timeframe and rolling features."""
+def fetch_yfinance_data(
+    pair: str, timeframe: str, drop_incomplete: bool = True
+) -> pd.DataFrame:
+    """Fetch enough history, optionally retaining the current daily context bar."""
     print(f"[WARNING] Falling back to yfinance for {timeframe} data.")
     download_interval = "1h" if timeframe == "4h" else timeframe
     period = "1y" if timeframe == "1d" else "60d"
@@ -210,16 +212,18 @@ def fetch_yfinance_data(pair: str, timeframe: str) -> pd.DataFrame:
     df = _normalize_ohlcv(df)
     if timeframe == "4h":
         df = _resample_4h(df)
-    return _drop_incomplete_candles(df, timeframe)
+    return _drop_incomplete_candles(df, timeframe) if drop_incomplete else df
 
 
-def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
-    """Fetch validated UTC candles from TwelveData, falling back to Yahoo safely."""
+def fetch_recent_data(
+    pair: str, timeframe: str, cfg: dict, drop_incomplete: bool = True
+) -> pd.DataFrame:
+    """Fetch validated UTC candles, optionally retaining the current daily bar for legacy models."""
     print(f"[INFO] Fetching {timeframe} data for {pair}...")
     api_key = os.environ.get("TWELVEDATA_API_KEY") or cfg.get("twelvedata_api_key", "")
     if not api_key:
         print("[WARNING] TWELVEDATA_API_KEY not set.")
-        return fetch_yfinance_data(pair, timeframe)
+        return fetch_yfinance_data(pair, timeframe, drop_incomplete=drop_incomplete)
 
     td_pair = pair.replace("=X", "").replace("-", "/")
     if "/" not in td_pair and len(td_pair) == 6:
@@ -238,12 +242,12 @@ def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
         if not isinstance(payload, dict) or "values" not in payload:
             message = payload.get("message", "Malformed TwelveData response") if isinstance(payload, dict) else "Malformed TwelveData response"
             print(f"[WARNING] TwelveData returned no candles ({message}); falling back to yfinance.")
-            return fetch_yfinance_data(pair, timeframe)
+            return fetch_yfinance_data(pair, timeframe, drop_incomplete=drop_incomplete)
         candles = _normalize_ohlcv(pd.DataFrame(payload["values"]))
-        return _drop_incomplete_candles(candles, timeframe)
+        return _drop_incomplete_candles(candles, timeframe) if drop_incomplete else candles
     except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
         print(f"[WARNING] TwelveData request failed ({type(exc).__name__}); falling back to yfinance.")
-        return fetch_yfinance_data(pair, timeframe)
+        return fetch_yfinance_data(pair, timeframe, drop_incomplete=drop_incomplete)
 
 
 def predict_signal(
@@ -366,7 +370,14 @@ def main():
     df_daily = None
     if timeframe != "1d":
         try:
-            df_daily = fetch_recent_data(pair, "1d", cfg)
+            # Legacy models were trained with same-date daily context. Keep the
+            # currently observed daily candle on that path so latest intraday
+            # features do not silently collapse to yesterday's row. New models
+            # continue to use only completed daily bars.
+            df_daily = fetch_recent_data(
+                pair, "1d", cfg,
+                drop_incomplete=(metadata.get("daily_context_mode", "legacy") != "legacy")
+            )
         except Exception as exc:
             print(f"[WARNING] Could not fetch daily trend ({type(exc).__name__}).")
 
