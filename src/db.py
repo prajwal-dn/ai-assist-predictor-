@@ -123,10 +123,13 @@ def _save_data():
             if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
 
-        repo_id = _get_repo_id()
-        api = _get_api()
-        if api and repo_id:
-            try:
+        # Local persistence is authoritative. A config/token/network error in
+        # optional cloud sync must not turn a successful local write into a
+        # reported failure that could roll back the in-memory history entry.
+        try:
+            repo_id = _get_repo_id()
+            api = _get_api()
+            if api and repo_id:
                 try:
                     api.dataset_info(repo_id)
                 except Exception:
@@ -140,8 +143,8 @@ def _save_data():
                     repo_type="dataset",
                     commit_message=f"Update prediction history ({len(data)} runs)",
                 )
-            except Exception as exc:
-                print(f"[DB WARNING] Failed to upload to HF dataset: {type(exc).__name__}")
+        except Exception as exc:
+            print(f"[DB WARNING] Cloud history sync failed: {type(exc).__name__}")
 
 
 def test_connection() -> bool:
@@ -187,7 +190,13 @@ def save_prediction_run(prediction: dict, pair: str, timeframe: str, horizon: in
             "is_error": 1 if prediction.get("error", False) else 0,
         }
         data_list.append(new_run)
-        _save_data()
+        try:
+            _save_data()
+        except Exception:
+            # Do not leave an unsaved row in the process cache after a local
+            # persistence failure; the next call must not create a ghost run.
+            data_list.pop()
+            raise
         return new_id
 
 
