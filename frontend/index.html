@@ -30,6 +30,82 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
 @media(max-width:1060px){.global-topbar{height:auto;min-height:70px;flex-wrap:wrap;padding:12px 15px;gap:11px}.brand{flex:1 1 240px}.top-nav{order:3;flex:1 1 100%;overflow-x:auto}.top-actions{margin-left:auto}.app-shell{grid-template-columns:1fr;min-height:auto}.sidebar{position:relative;top:auto;height:auto;overflow:visible;padding:11px 14px;border-right:0;border-bottom:1px solid var(--border);gap:11px}.sidebar-nav{flex-direction:row;gap:5px;overflow-x:auto;padding-bottom:2px}.nav-link{width:auto;flex:0 0 auto;min-height:36px;padding:7px 10px}.nav-link:hover{transform:none}.sidebar-card,.sidebar-quote{display:none}.main-area{padding:12px}.dashboard-grid{grid-template-columns:minmax(0,1fr)}.left-column{display:grid;grid-template-columns:minmax(0,1fr)}.hero{min-height:220px}.right-column{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.ticker-grid{grid-column:1/-1}.analysis-stack{display:contents}.analysis-stack>.panel{min-width:0}.chart-wrap{height:365px;min-height:325px}}
 @media(max-width:660px){.hero-copy{max-width:100%;padding-right:0}.hero:before{width:78%;right:-26%;opacity:.35}.global-topbar{padding:10px}.brand{flex-basis:100%}.top-actions{width:100%;justify-content:flex-start;margin-left:0;flex-wrap:wrap}.top-actions .pair-pill{display:none}.top-nav{gap:3px}.top-nav a{font-size:10px;padding:8px 9px}.sidebar{padding:9px}.main-area{padding:10px}.hero{min-height:unset;padding:22px 17px}.hero:before{right:-150px;opacity:.45}.hero h2{font-size:29px;letter-spacing:-1px}.hero-copy>p{font-size:10px}.hero-tags{gap:5px;margin-top:15px}.hero-tag{font-size:8px;padding:6px 7px}.ticker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ticker-card{padding:10px}.ticker-symbol{font-size:10px}.right-column{display:flex;flex-direction:column}.right-column>.analysis-stack{display:flex;width:100%}.chart-wrap{height:320px;min-height:285px}.chart-toolbar{flex-wrap:wrap;justify-content:flex-start}.chart-mode-tabs{width:100%}.chart-timeframes{max-width:100%;overflow-x:auto}.bottom-grid{grid-template-columns:minmax(0,1fr)}.bottom-grid>.info-panel{grid-column:auto}.footer-note{flex-direction:column}.model-info-grid{grid-template-columns:1fr 1fr}.result-metrics{margin-inline:-14px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* Functional multi-view navigation */
+.route-page{display:none;min-width:0}
+.route-page-header{margin:3px 0 15px;padding:5px 2px}
+.route-page-header[hidden]{display:none!important}
+.route-eyebrow{font-size:9px;letter-spacing:1.8px;text-transform:uppercase;font-weight:800;color:var(--blue);margin-bottom:7px}
+.route-page-header h1{font-size:clamp(23px,2.3vw,32px);line-height:1.15;letter-spacing:-1.1px;color:var(--text)}
+.route-page-header p{margin-top:7px;color:var(--muted);font-size:12px;line-height:1.6;max-width:760px}
+.route-panel{padding:17px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(150deg,var(--surface),color-mix(in srgb,var(--surface2) 75%,transparent));box-shadow:var(--shadow);min-width:0}
+.route-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.route-panel-heading h2{font-size:15px;letter-spacing:-.25px;color:var(--text)}
+.route-panel-heading p{font-size:11px;line-height:1.5;margin-top:5px;color:var(--muted)}
+.route-count{flex:0 0 auto;color:var(--cyan);background:color-mix(in srgb,var(--cyan) 9%,var(--surface));border:1px solid var(--border);border-radius:999px;padding:7px 10px;font-size:10px;font-weight:700}
+.route-refresh{border:1px solid var(--borderStrong);border-radius:9px;padding:8px 11px;background:var(--surface2);color:var(--text);font-weight:650;font-size:10px;cursor:pointer}
+.route-empty{padding:18px;color:var(--muted);font-size:12px}
+.market-page-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.market-directory-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border:1px solid var(--border);border-radius:13px;padding:14px;background:var(--surface2);color:var(--text);cursor:pointer;transition:transform .18s,border-color .18s,background .18s;min-width:0}
+.market-directory-card:hover{transform:translateY(-2px);border-color:var(--borderStrong);background:var(--surface3)}
+.market-directory-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px}
+.market-directory-symbol{font-size:15px;font-weight:800;letter-spacing:-.3px;overflow-wrap:anywhere}
+.market-directory-type{font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:4px 7px}
+.market-directory-status{display:flex;align-items:center;gap:6px;color:var(--green);font-size:10px}
+.market-directory-cta{font-size:10px;color:var(--blue);margin-top:2px}
+.route-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:13px}
+.route-stat-card{padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:7px;min-width:0}
+.route-stat-card>span{font-size:10px;color:var(--muted)}
+.route-stat-card strong{font-size:21px;color:var(--text);letter-spacing:-.5px;overflow-wrap:anywhere}
+.route-stat-card small{font-size:9px;color:var(--muted2)}
+.model-inventory-list{display:flex;flex-direction:column;gap:7px}
+.model-inventory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;border:1px solid var(--border);background:var(--surface2)}
+.model-inventory-name{font-size:12px;font-weight:700;color:var(--text)}
+.model-inventory-key{font-size:10px;color:var(--muted);margin-top:4px}
+.model-inventory-state{font-size:9px;font-weight:750;border-radius:999px;padding:5px 8px;white-space:nowrap;color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--surface))}
+.model-inventory-state.unavailable{color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--surface))}
+.theme-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.theme-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--text);cursor:pointer;transition:border-color .18s,transform .18s}
+.theme-choice:hover{transform:translateY(-2px);border-color:var(--borderStrong)}
+.theme-choice.selected{border-color:var(--blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 30%,transparent),0 0 22px color-mix(in srgb,var(--blue) 9%,transparent)}
+.theme-preview{display:flex;gap:5px;align-items:flex-start;width:100%;height:106px;padding:12px;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.theme-preview span{display:block;border-radius:5px}
+.theme-preview span:first-child{width:27%;height:100%}
+.theme-preview span:nth-child(2){width:39%;height:45%}
+.theme-preview span:nth-child(3){width:25%;height:65%}
+.theme-preview-dark{background:#040915}.theme-preview-dark span:first-child{background:#071b38}.theme-preview-dark span:nth-child(2){background:#12316a}.theme-preview-dark span:nth-child(3){background:linear-gradient(160deg,#168bff,#853dff)}
+.theme-preview-light{background:#f2f5fc}.theme-preview-light span:first-child{background:#e1e9f8}.theme-preview-light span:nth-child(2){background:#fff}.theme-preview-light span:nth-child(3){background:linear-gradient(160deg,#69b9ff,#b18aff)}
+.theme-choice-title{font-size:12px;font-weight:750}.theme-choice-copy{font-size:10px;line-height:1.4;color:var(--muted)}.theme-choice-state{font-size:9px;font-weight:750;color:var(--blue)}
+.bottom-link{border:0;background:transparent;cursor:pointer;font:inherit;text-align:left}
+.main-area[data-active-view="markets"] #markets-route,.main-area[data-active-view="models"] #models-route,.main-area[data-active-view="appearance"] #appearance-route{display:block}
+.main-area[data-active-view="markets"] .dashboard-grid,.main-area[data-active-view="markets"] .bottom-grid,.main-area[data-active-view="models"] .dashboard-grid,.main-area[data-active-view="appearance"] .dashboard-grid,.main-area[data-active-view="appearance"] .bottom-grid{display:none}
+.main-area[data-active-view="analysis"] .dashboard-grid{grid-template-columns:minmax(0,1fr)}
+.main-area[data-active-view="analysis"] .left-column{display:block}
+.main-area[data-active-view="analysis"] .left-column .hero,.main-area[data-active-view="analysis"] .right-column{display:none}
+.main-area[data-active-view="analysis"] .bottom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.main-area[data-active-view="analysis"] .bottom-grid>*:not(#analysis-insights):not(#model-info){display:none}
+.main-area[data-active-view="prediction"] .dashboard-grid{grid-template-columns:minmax(0,1fr)}
+.main-area[data-active-view="prediction"] .left-column{display:none}
+.main-area[data-active-view="prediction"] .right-column{display:block;width:100%;max-width:1100px;margin:0 auto}
+.main-area[data-active-view="prediction"] .ticker-grid{display:none}
+.main-area[data-active-view="prediction"] .analysis-stack{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.main-area[data-active-view="prediction"] .bottom-grid{display:none}
+.main-area[data-active-view="history"] .dashboard-grid{display:none}
+.main-area[data-active-view="history"] .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:0}
+.main-area[data-active-view="history"] .bottom-grid>*:not(#recent-predictions){display:none}
+.main-area[data-active-view="history"] #recent-predictions{display:block;min-height:260px}
+.main-area[data-active-view="history"] #history-list .history-item{display:flex}
+.main-area[data-active-view="history"] .history-list{max-height:none;overflow:visible}
+.main-area[data-active-view="history"] .history-item{padding:12px 4px}
+.main-area[data-active-view="dashboard"] #history-list .history-item:nth-child(n+4){display:none}
+.main-area[data-active-view="models"] .dashboard-grid{display:none}
+.main-area[data-active-view="models"] .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:13px}
+.main-area[data-active-view="models"] .bottom-grid>*:not(#model-info){display:none}
+.main-area[data-active-view="models"] #model-info{display:block}
+.main-area[data-active-view="dashboard"] #route-page-header{display:none}
+.main-area[data-active-view]:not([data-active-view="dashboard"]) #route-page-header:not([hidden]){display:block}
+@media(max-width:900px){.market-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.route-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.main-area[data-active-view="prediction"] .analysis-stack{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.market-page-grid,.route-stat-grid,.theme-choice-grid{grid-template-columns:minmax(0,1fr)}.model-inventory-row{grid-template-columns:minmax(0,1fr);align-items:start}.route-panel{padding:12px}.route-page-header h1{font-size:24px}}
+
 </style>
 </head>
 <body>
@@ -40,7 +116,12 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
     <span><span class="brand-name">ASSET PREDICTOR <span>PRO</span></span><span class="brand-tagline">AI powered market analysis</span></span>
   </a>
   <nav class="top-nav" aria-label="Main navigation">
-    <a class="active" href="#top">Dashboard</a><a href="#market-ticker">Markets</a><a href="#market-chart">Analysis</a><a href="/history">History</a><a href="#model-info">Models</a><a href="https://github.com/prajwal-dn/ai-assist-predictor-#readme" target="_blank" rel="noreferrer">Docs</a>
+    <a class="active" href="#dashboard-view" data-view-target="dashboard" aria-current="page">Dashboard</a>
+    <a href="#markets-view" data-view-target="markets">Markets</a>
+    <a href="#analysis-view" data-view-target="analysis">Analysis</a>
+    <a href="#history-view" data-view-target="history">History</a>
+    <a href="#models-view" data-view-target="models">Models</a>
+    <a href="https://github.com/prajwal-dn/ai-assist-predictor-#readme" target="_blank" rel="noreferrer">Docs</a>
   </nav>
   <div class="top-actions">
     <span class="status-pill" id="service-status" role="status" aria-live="polite"><span class="dot"></span><span id="service-status-text">CHECKING API</span></span>
@@ -52,12 +133,12 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
 <div class="app-shell" id="top">
   <aside class="sidebar" aria-label="Dashboard sidebar">
     <nav class="sidebar-nav" aria-label="Dashboard sections">
-      <a href="#top" class="nav-link active"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
-      <a href="#market-chart" class="nav-link"><span class="nav-icon">⌁</span><span>Market Analysis</span></a>
-      <a href="#run-prediction" class="nav-link"><span class="nav-icon">▷</span><span>Run Prediction</span></a>
-      <a href="/history" class="nav-link"><span class="nav-icon">◷</span><span>History</span></a>
-      <a href="#model-info" class="nav-link"><span class="nav-icon">⬡</span><span>Model Info</span></a>
-      <button type="button" class="nav-link" onclick="toggleTheme()"><span class="nav-icon">☼</span><span>Appearance</span></button>
+      <button type="button" class="nav-link active" data-view-target="dashboard" aria-current="page"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
+      <button type="button" class="nav-link" data-view-target="analysis"><span class="nav-icon">⌁</span><span>Market Analysis</span></button>
+      <button type="button" class="nav-link" data-view-target="prediction"><span class="nav-icon">▷</span><span>Run Prediction</span></button>
+      <button type="button" class="nav-link" data-view-target="history"><span class="nav-icon">◷</span><span>History</span></button>
+      <button type="button" class="nav-link" data-view-target="models"><span class="nav-icon">⬡</span><span>Model Info</span></button>
+      <button type="button" class="nav-link" data-view-target="appearance"><span class="nav-icon">☼</span><span>Appearance</span></button>
     </nav>
     <section class="sidebar-card" aria-label="Supported markets">
       <div class="sidebar-card-title">Supported Markets</div>
@@ -66,7 +147,7 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
     </section>
     <div class="sidebar-quote"><p>Data today,<br>better decisions tomorrow.</p></div>
   </aside>
-  <main class="main-area">
+  <main class="main-area" data-active-view="dashboard">
     <div id="error-box" role="alert" aria-live="assertive"></div>
     <div class="readiness-notice" id="readiness-notice" role="status" aria-live="polite">Checking model artifacts and application readiness…</div>
     <div class="sr-only" aria-hidden="true">
@@ -74,6 +155,49 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
       <span id="stat-model-count"></span><span id="model-market-label"></span><span id="model-confidence-label"></span>
     </div>
 
+    <div id="route-page-header" class="route-page-header" hidden aria-live="polite">
+      <div class="route-eyebrow" id="route-page-eyebrow">YOUR MARKET WORKSPACE</div>
+      <h1 id="route-page-title">Dashboard</h1>
+      <p id="route-page-description">Your model-ready markets and latest analysis in one workspace.</p>
+    </div>
+    <section id="markets-route" class="route-page" aria-labelledby="markets-route-title">
+      <div class="route-panel">
+        <div class="route-panel-heading">
+          <div><h2 id="markets-route-title">Supported markets</h2><p>Only pairs returned by your backend model inventory appear here.</p></div>
+          <span class="route-count" id="markets-page-count">Checking models…</span>
+        </div>
+        <div class="market-page-grid" id="markets-page-grid"><div class="route-empty">Loading trained market pairs from the API…</div></div>
+      </div>
+    </section>
+    <section id="models-route" class="route-page" aria-labelledby="models-route-title">
+      <div class="route-stat-grid">
+        <article class="route-stat-card"><span>Verified model pairs</span><strong id="models-page-count">—</strong><small>Returned by /api/models</small></article>
+        <article class="route-stat-card"><span>Active model</span><strong id="models-page-active">—</strong><small>Current selection</small></article>
+        <article class="route-stat-card"><span>Artifact status</span><strong id="models-page-status">Checking…</strong><small>Current pair only</small></article>
+      </div>
+      <div class="route-panel">
+        <div class="route-panel-heading"><div><h2 id="models-route-title">Model inventory</h2><p>Real backend inventory; unavailable pairs are listed separately.</p></div>
+          <button type="button" class="route-refresh" onclick="refreshRouteData()">↻ Refresh</button>
+        </div>
+        <div id="models-page-inventory"><div class="route-empty">Loading backend inventory…</div></div>
+      </div>
+    </section>
+    <section id="appearance-route" class="route-page" aria-labelledby="appearance-route-title">
+      <div class="route-panel appearance-panel">
+        <div class="route-panel-heading"><div><h2 id="appearance-route-title">Appearance</h2><p>Choose the color theme for this dashboard. Your choice is saved in this browser.</p></div></div>
+        <div class="theme-choice-grid">
+          <button type="button" class="theme-choice selected" data-theme-choice="dark" onclick="selectAppearance('dark')">
+            <span class="theme-preview theme-preview-dark"><span></span><span></span><span></span></span>
+            <span class="theme-choice-title">Dark mode</span><span class="theme-choice-copy">Deep navy, blue and violet accents</span><span class="theme-choice-state" id="theme-dark-state">Selected</span>
+          </button>
+          <button type="button" class="theme-choice" data-theme-choice="light" onclick="selectAppearance('light')">
+            <span class="theme-preview theme-preview-light"><span></span><span></span><span></span></span>
+            <span class="theme-choice-title">Light mode</span><span class="theme-choice-copy">Bright surfaces with high-contrast text</span><span class="theme-choice-state" id="theme-light-state">Select theme</span>
+          </button>
+        </div>
+        <p class="model-note">The theme affects the dashboard, page panels, navigation, and the TradingView chart where supported.</p>
+      </div>
+    </section>
     <div class="dashboard-grid">
       <div class="left-column">
         <section class="hero" aria-labelledby="workspace-title">
@@ -167,14 +291,14 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
       </article>
 
       <article class="info-panel" id="model-info">
-        <div class="info-title"><span class="panel-symbol">⚙</span>Technical indicators</div>
+        <div class="info-title"><span class="panel-symbol">⬡</span>Selected model details</div>
         <div class="model-info-grid">
-          <div class="model-info-item"><span>RSI</span><strong>Not returned</strong><small>Indicator data unavailable</small></div>
-          <div class="model-info-item"><span>MACD</span><strong>Not returned</strong><small>Indicator data unavailable</small></div>
-          <div class="model-info-item"><span>EMA (50)</span><strong>Not returned</strong><small>Indicator data unavailable</small></div>
-          <div class="model-info-item"><span>ATR / volatility</span><strong>Not returned</strong><small>Indicator data unavailable</small></div>
+          <div class="model-info-item"><span>Selected market</span><strong id="model-detail-pair">—</strong><small>Current API configuration</small></div>
+          <div class="model-info-item"><span>Artifact readiness</span><strong id="model-detail-status">Checking…</strong><small>Verified by backend</small></div>
+          <div class="model-info-item"><span>Input timeframe</span><strong id="model-detail-timeframe">—</strong><small>Configured model input</small></div>
+          <div class="model-info-item"><span>Forecast horizon</span><strong id="model-detail-horizon">—</strong><small>Configured output horizon</small></div>
         </div>
-        <p class="model-note">The current API returns prediction probabilities and risk levels, but not these technical-indicator values.</p>
+        <p class="model-note" id="model-detail-note">Model files being present does not guarantee market-data availability or a successful prediction. Those are checked when a run starts.</p>
       </article>
 
       <article class="info-panel" id="confidence-info">
@@ -186,7 +310,7 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
       <article class="info-panel" id="recent-predictions">
         <div class="info-title"><span class="panel-symbol">◷</span><span>Recent predictions</span><span class="panel-caption" id="history-storage-status">This session</span></div>
         <div class="history-list" id="history-list"><div class="empty-history">No predictions in this session yet.</div></div>
-        <a href="/history" class="bottom-link">View saved run history ↗</a>
+        <button type="button" class="bottom-link" onclick="navigateToView('history')">View all saved runs ↗</button>
       </article>
     </section>
 
@@ -300,6 +424,18 @@ async function loadAppConfig() {
     const pairCode = String(cfg.pair_code || cfg.pair || 'Unknown').toUpperCase();
     const timeframe = String(cfg.timeframe || '1h').toUpperCase();
     const horizon = Number(cfg.forecast_horizon || 4);
+    const detailPair = document.getElementById('model-detail-pair');
+    const detailStatus = document.getElementById('model-detail-status');
+    const detailTimeframe = document.getElementById('model-detail-timeframe');
+    const detailHorizon = document.getElementById('model-detail-horizon');
+    const detailNote = document.getElementById('model-detail-note');
+    if (detailPair) detailPair.textContent = pairCode;
+    if (detailStatus) detailStatus.textContent = cfg.model_exists ? 'Artifact present' : 'Unavailable';
+    if (detailTimeframe) detailTimeframe.textContent = timeframe;
+    if (detailHorizon) detailHorizon.textContent = horizon + ' hours';
+    if (detailNote) detailNote.textContent = cfg.model_exists
+      ? 'The backend detected this model artifact. Market-data access and successful inference are verified only when a prediction runs.'
+      : (cfg.model_status || 'No verified model artifact is available for the selected pair.');
 
     const pairBadge = document.getElementById('pair-display');
     if (pairBadge) pairBadge.textContent = `${pairCode} · ${timeframe} · ${horizon}H`;
@@ -506,7 +642,7 @@ function renderHistoryItems(items) {
     list.innerHTML = '<div class="empty-history">No saved predictions found yet. Run a prediction to get started.</div>';
     return;
   }
-  list.innerHTML = items.slice(0,5).map(h => {
+  list.innerHTML = items.slice(0,50).map(h => {
     const signal = ['BUY','SELL','FLAT'].includes(h.signal || h.trade_signal) ? (h.signal || h.trade_signal) : 'UNKNOWN';
     const timestamp = String(h.timestamp || h.candle_timestamp || h.run_timestamp || '');
     const closeValue = Number(h.close != null ? h.close : h.close_price);
@@ -526,28 +662,27 @@ function addToHistory(d) {
     ...d,
     pair: pair && pair.selectedOptions.length ? pair.selectedOptions[0].textContent : ''
   });
-  if (history.length > 10) history.pop();
+  if (history.length > 50) history.pop();
   renderHistoryItems(history);
 }
 
 async function loadSavedHistory() {
   try {
-    const response = await fetch(window.assetPredictorApiUrl('/api/history?limit=5'));
+    const response = await fetch(window.assetPredictorApiUrl('/api/history?limit=50'));
     if (!response.ok) return;
     const payload = await response.json();
-    if (!Array.isArray(payload.runs) || !payload.runs.length || history.length) return;
-    history = payload.runs.map(run => ({
-      signal: run.trade_signal,
-      confidence: run.confidence,
-      close: run.close_price,
-      timestamp: run.candle_timestamp || run.run_timestamp,
-      run_timestamp: run.run_timestamp,
-      pair: run.pair
+    if (!Array.isArray(payload.runs)) return;
+    const saved = payload.runs.map(run => ({
+      signal: run.trade_signal, confidence: run.confidence, close: run.close_price,
+      timestamp: run.candle_timestamp || run.run_timestamp, run_timestamp: run.run_timestamp, pair: run.pair
     }));
+    const keyOf = item => [item.pair || '', item.timestamp || item.run_timestamp || '', item.signal || item.trade_signal || ''].join('|');
+    const seen = new Set(history.map(keyOf));
+    history = [...history, ...saved.filter(item => { const key = keyOf(item); if (seen.has(key)) return false; seen.add(key); return true; })].slice(0,50);
     renderHistoryItems(history);
-    document.getElementById('history-storage-status').textContent = 'Saved history';
+    if (saved.length) document.getElementById('history-storage-status').textContent = 'Saved history + this session';
   } catch(e) {
-    // Dashboard remains usable even when history storage is offline.
+    // Session history remains usable when saved storage is offline.
   }
 }
 
