@@ -10,7 +10,7 @@ Then open: http://localhost:7860
 """
 
 import os, sys, json, subprocess, time, yaml, threading, re, math, tempfile
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 # Add src/ to path so we can import db module
@@ -20,7 +20,8 @@ from db import save_prediction_run, get_recent_runs, get_run_stats, test_connect
 PORT = int(os.environ.get("PORT", 7860))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_TTL_SECONDS = int(os.environ.get("PREDICTION_CACHE_SECONDS", 60))
-_prediction_cache = {}   # keyed by pair+timeframe
+_prediction_cache = {}   # keyed by pair, timeframe, horizon, and confidence threshold
+_prediction_cache_lock = threading.Lock()
 _train_status = {"running": False, "log": "", "success": None}
 _train_lock = threading.Lock()
 _db_available = False
@@ -266,9 +267,10 @@ def run_predict(pair_override: str = None):
     cache_key = f"{cfg['pair']}|{cfg['timeframe']}|{cfg['forecast_horizon']}|{cfg.get('confidence_threshold', '')}"
     now = time.time()
 
-    cached = _prediction_cache.get(cache_key)
-    if cached and now - cached["time"] < CACHE_TTL_SECONDS:
-        return dict(cached["data"])
+    with _prediction_cache_lock:
+        cached = _prediction_cache.get(cache_key)
+        if cached and now - cached["time"] < CACHE_TTL_SECONDS:
+            return dict(cached["data"])
 
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
@@ -342,7 +344,8 @@ def run_predict(pair_override: str = None):
 
     # Cache only after persistence was attempted, so a failed history write can retry.
     if cacheable:
-        _prediction_cache[cache_key] = {"time": time.time(), "data": dict(data)}
+        with _prediction_cache_lock:
+            _prediction_cache[cache_key] = {"time": time.time(), "data": dict(data)}
     return data
 
 def load_trained_pairs():
@@ -562,6 +565,6 @@ if __name__ == "__main__":
     print(f"\n Asset Predictor Dashboard", flush=True)
     print(f" Listening on 0.0.0.0:{PORT}", flush=True)
     print(f" Run History route: /history", flush=True)
-    server = HTTPServer(("0.0.0.0", PORT), Handler)
+    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print(f" HTTP server listening on 0.0.0.0:{PORT}", flush=True)
     server.serve_forever()
