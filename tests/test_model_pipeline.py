@@ -10,6 +10,7 @@ from src.feature_engineer import add_features
 from src.labeller import add_labels, split_and_save
 from src.backtest import simulate_trades, quote_currency
 from src.predict import _drop_incomplete_candles, fetch_recent_data, load_model_artifacts
+from src.train_model import evaluate
 import src.db as db_module
 
 
@@ -20,6 +21,44 @@ def feature_config():
         "daily_context_mode": "completed",
     }}
 
+
+
+class ModelEvaluationTests(unittest.TestCase):
+    def test_up_probability_uses_class_label_not_column_position(self):
+        class IdentityScaler:
+            def transform(self, values):
+                return values
+
+        class ReversedClassModel:
+            classes_ = np.array([1, 0])
+
+            def predict_proba(self, values):
+                # Column 0 is UP because classes_ is [1, 0].
+                return np.array([[0.9, 0.1], [0.1, 0.9]])
+
+        test_df = pd.DataFrame({
+            "feature": [1.0, 2.0],
+            "target": [1, 0],
+        })
+        metrics = evaluate(
+            ReversedClassModel(), IdentityScaler(), test_df, ["feature"], threshold=0.55
+        )
+        self.assertEqual(metrics["all_accuracy"], 1.0)
+        self.assertEqual(metrics["confident_accuracy"], 1.0)
+        self.assertEqual(metrics["confident_pct"], 100.0)
+
+    def test_evaluation_rejects_overlapping_confidence_threshold(self):
+        class IdentityScaler:
+            def transform(self, values):
+                return values
+        class BinaryModel:
+            classes_ = np.array([0, 1])
+            def predict_proba(self, values):
+                return np.array([[0.7, 0.3]])
+        with self.assertRaisesRegex(ValueError, "greater than 0.5"):
+            evaluate(BinaryModel(), IdentityScaler(),
+                     pd.DataFrame({"feature": [1.0], "target": [0]}),
+                     ["feature"], threshold=0.5)
 
 
 class HistoryPersistenceTests(unittest.TestCase):
