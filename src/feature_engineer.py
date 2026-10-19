@@ -74,27 +74,34 @@ def add_features(
             raise ValueError("Daily context contains no valid rows.")
         df_daily["daily_sma"] = ta.trend.SMAIndicator(df_daily["close"], window=50).sma_indicator()
         df_daily["daily_rsi"] = ta.momentum.RSIIndicator(df_daily["close"], window=14).rsi()
-        # Map each completed daily candle's indicators to the next calendar
-        # date. This keeps today's intraday rows populated even though the
-        # current unfinished daily candle is intentionally filtered out.
         if mode == "completed":
-            df_daily["date_key"] = (df_daily["datetime"] + pd.Timedelta(days=1)).dt.date
-        else:
-            df_daily["date_key"] = df_daily["datetime"].dt.date
-        df["date_key"] = df["datetime"].dt.date
-        df = df.merge(
-            df_daily[["date_key", "daily_sma", "daily_rsi"]],
-            on="date_key", how="left", validate="many_to_one"
-        )
-        if mode == "completed":
+            # Daily rows are timestamped at the start of their day. Their
+            # indicators become usable after the next UTC midnight. An exact
+            # next-calendar-day join fails after weekends/market holidays, so
+            # use the latest daily indicator whose completion time is <= row time.
+            df_daily["available_at"] = df_daily["datetime"] + pd.Timedelta(days=1)
+            left = df.sort_values("datetime").reset_index(drop=True)
+            right = df_daily[["available_at", "daily_sma", "daily_rsi"]].sort_values("available_at")
+            df = pd.merge_asof(
+                left, right, left_on="datetime", right_on="available_at",
+                direction="backward", allow_exact_matches=True
+            )
             df["above_daily_sma"] = np.where(
                 df["daily_sma"].notna(),
                 np.where(df["close"] > df["daily_sma"], 1, -1),
                 np.nan
             )
+            df.drop(columns=["available_at"], inplace=True)
         else:
+            # Preserve same-date joins for legacy model artifacts only.
+            df_daily["date_key"] = df_daily["datetime"].dt.date
+            df["date_key"] = df["datetime"].dt.date
+            df = df.merge(
+                df_daily[["date_key", "daily_sma", "daily_rsi"]],
+                on="date_key", how="left", validate="many_to_one"
+            )
             df["above_daily_sma"] = np.where(df["close"] > df["daily_sma"], 1, -1)
-        df.drop(columns=["date_key"], inplace=True)
+            df.drop(columns=["date_key"], inplace=True)
 
     if len(df) < features_cfg["ma_long"] + 10:
         raise ValueError(f"Not enough rows ({len(df)}) for indicators.")
