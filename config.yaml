@@ -12,7 +12,7 @@ timeframe: "1h"
 # For Hugging Face Spaces, add this as a Secret named TWELVEDATA_API_KEY.
 twelvedata_api_key: ""
 
-# How many hours ahead to predict (1 = next candle)
+# Number of future candles to forecast (elapsed duration depends on timeframe)
 forecast_horizon: 4
 
 # How many years of history to download for training
