@@ -20,76 +20,63 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def download_data(pair: str, years: int, timeframe: str) -> pd.DataFrame:
-    """
-    Download OHLCV candles for `pair` going back `years` years.
-    Yahoo Finance supports 1h data only for the last 730 days.
-    """
-    end_date   = datetime.today()
-    start_date = end_date - timedelta(days=years * 365)
+def _resample_4h(df: pd.DataFrame) -> pd.DataFrame:
+    indexed = df.set_index("datetime").sort_index()
+    rule = "4h"
+    bars = indexed.resample(rule, origin="start_day", closed="left", label="left").agg({
+        "open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"
+    })
+    counts = indexed["close"].resample(rule, origin="start_day", closed="left", label="left").count()
+    return bars.loc[counts >= 4].reset_index()
 
-    if timeframe == "1h":
+
+def download_data(pair: str, years: int, timeframe: str) -> pd.DataFrame:
+    """Download normalized OHLCV; 4h bars are aggregated from complete hourly buckets."""
+    end_date = datetime.today()
+    start_date = end_date - timedelta(days=years * 365)
+    download_interval = "1h" if timeframe == "4h" else timeframe
+    if download_interval == "1h":
         max_start = end_date - timedelta(days=729)
         if start_date < max_start:
-            print("[INFO] 1h data limited to 2 years on Yahoo Finance. Adjusting start date.")
+            print("[INFO] Hourly data limited to two years on Yahoo Finance. Adjusting start date.")
             start_date = max_start
-
     print(f"[INFO] Downloading {pair} | {timeframe} | {start_date.date()} to {end_date.date()}")
-
     df = yf.download(
-        tickers=pair,
-        start=start_date,
-        end=end_date,
-        interval=timeframe,
-        auto_adjust=True,
-        progress=False,
-        multi_level_index=False,   # yfinance 0.2.38+ flat columns
+        tickers=pair, start=start_date, end=end_date, interval=download_interval,
+        auto_adjust=True, progress=False, multi_level_index=False,
     )
-
     if df.empty:
         raise ValueError(f"No data returned for {pair}. Check the ticker symbol.")
-
-    # Flatten MultiIndex columns just in case (older yfinance versions)
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
-
-    # Lowercase all column names
     df.columns = [str(c).strip().lower() for c in df.columns]
-
-    # Move the DatetimeIndex into a regular column called 'datetime'
     df.index.name = "datetime"
     df.reset_index(inplace=True)
-
-    # yfinance sometimes names it 'date' instead of 'datetime'
     if "datetime" not in df.columns:
-        for candidate in ["date", "timestamp"]:
+        for candidate in ("date", "timestamp"):
             if candidate in df.columns:
                 df.rename(columns={candidate: "datetime"}, inplace=True)
                 break
-
-    print(f"[DEBUG] Columns after download: {list(df.columns)}")
-
-    # Ensure we have all required columns
     needed = ["datetime", "open", "high", "low", "close", "volume"]
     missing = [c for c in needed if c not in df.columns]
     if missing:
-        raise ValueError(
-            f"Missing columns {missing}. Available: {list(df.columns)}\n"
-            "Try updating yfinance: pip install --upgrade yfinance"
-        )
-
+        raise ValueError(f"Downloaded data is missing columns {missing}. Available: {list(df.columns)}")
     df = df[needed].copy()
-
-    # Remove any non-numeric rows (yfinance 0.2+ sometimes injects a 'Ticker' row)
-    df = df[pd.to_numeric(df["close"], errors="coerce").notna()].copy()
-    for col in ["open", "high", "low", "close"]:
-        df[col] = df[col].astype(float)
-    df["volume"] = pd.to_numeric(df["volume"], errors="coerce").fillna(0).astype(float)
-
-    df.dropna(subset=["open", "high", "low", "close"], inplace=True)
+    df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce", utc=True).dt.tz_localize(None)
+    for col in ("open", "high", "low", "close", "volume"):
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df["volume"] = df["volume"].fillna(0.0)
+    valid = df["datetime"].notna() & df[["open", "high", "low", "close"]].notna().all(axis=1)
+    valid &= (df[["open", "high", "low", "close"]] > 0).all(axis=1)
+    valid &= df["high"] >= df[["open", "close"]].max(axis=1)
+    valid &= df["low"] <= df[["open", "close"]].min(axis=1)
+    df = df.loc[valid].sort_values("datetime").drop_duplicates("datetime", keep="last")
     df.reset_index(drop=True, inplace=True)
-
-    print(f"[INFO] Downloaded {len(df):,} candles.")
+    if timeframe == "4h":
+        df = _resample_4h(df)
+    if df.empty:
+        raise ValueError(f"No valid candles remained for {pair} at {timeframe}.")
+    print(f"[INFO] Downloaded {len(df):,} normalized candles.")
     return df
 
 
