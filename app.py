@@ -9,7 +9,7 @@ Usage:
 Then open: http://localhost:7860
 """
 
-import os, sys, json, subprocess, time, yaml, threading, re
+import os, sys, json, subprocess, time, yaml, threading, re, math, tempfile
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -43,7 +43,7 @@ def artifact_status(pair: str, model_dir: str) -> dict:
         "scaler": os.path.join(model_dir, f"{pair}_scaler.pkl"),
         "features": os.path.join(model_dir, f"{pair}_feature_cols.pkl"),
     }
-    missing = [kind for kind, path in paths.items() if not os.path.isfile(path)]
+    missing = [kind for kind, path in paths.items() if not os.path.isfile(path) or os.path.getsize(path) == 0]
     pointers = [kind for kind, path in paths.items() if os.path.isfile(path) and is_git_lfs_pointer(path)]
     if missing:
         return {"ready": False, "reason": "Missing model artifacts: " + ", ".join(missing)}
@@ -99,23 +99,111 @@ def save_pair_to_config(new_pair: str):
     with open(cfg_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
-    with open(cfg_path, "w", encoding="utf-8") as f:
-        for line in lines:
-            if line.strip().startswith("pair:"):
-                f.write(f'pair: "{new_pair}"\n')
-            else:
-                f.write(line)
+    replaced = False
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=os.path.dirname(cfg_path),
+                                         prefix=".config-", suffix=".tmp", delete=False) as f:
+            temporary_path = f.name
+            for line in lines:
+                if line.strip().startswith("pair:"):
+                    f.write(f'pair: "{new_pair}"\n')
+                    replaced = True
+                else:
+                    f.write(line)
+        if not replaced:
+            raise ValueError("config.yaml does not contain a pair setting.")
+        os.replace(temporary_path, cfg_path)
+        temporary_path = None
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            os.unlink(temporary_path)
+
+
+
+def _parse_output_number(line: str, label: str):
+    """Parse one labelled numeric line and retain whether it used percent units."""
+    pattern = rf"^\s*{re.escape(label)}\s*:\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)\s*(%)?\s*$"
+    match = re.match(pattern, line, re.IGNORECASE)
+    if not match:
+        return None
+    try:
+        return float(match.group(1)), bool(match.group(2))
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_prediction_output(output: str, returncode: int = 0) -> dict:
+    """Parse predict.py's report without guessing percent units."""
+    data = {
+        "signal": "UNKNOWN", "prob_up": 0.0, "prob_down": 0.0,
+        "confidence": 0.0, "close": 0.0, "timestamp": "",
+        "stop_loss": None, "take_profit": None, "raw": output or "",
+        "error": returncode != 0,
+    }
+    seen = set()
+    numeric_fields = (
+        ("Prob UP", "prob_up", True), ("Prob DOWN", "prob_down", True),
+        ("Confidence", "confidence", True), ("Close", "close", False),
+        ("Stop Loss", "stop_loss", False), ("Take Profit", "take_profit", False),
+    )
+    for line in (output or "").splitlines():
+        signal_match = re.match(
+            r"^\s*SIGNAL\s*:\s*(?:>{1,3}\s*)?(BUY|SELL|FLAT)\b", line, re.IGNORECASE
+        )
+        if signal_match:
+            data["signal"] = signal_match.group(1).upper()
+            seen.add("signal")
+            continue
+        time_match = re.match(r"^\s*Time\s*:\s*(.*?)\s*$", line, re.IGNORECASE)
+        if time_match:
+            data["timestamp"] = time_match.group(1)
+            if data["timestamp"]:
+                seen.add("timestamp")
+            continue
+        for label, key, is_probability in numeric_fields:
+            parsed = _parse_output_number(line, label)
+            if parsed is None:
+                continue
+            value, had_percent = parsed
+            if is_probability and not had_percent and 0.0 <= value <= 1.0:
+                value *= 100.0
+            data[key] = value
+            seen.add(key)
+            break
+
+    required = {"signal", "prob_up", "prob_down", "confidence", "close", "timestamp"}
+    if data["signal"] == "UNKNOWN" or not required.issubset(seen):
+        data["error"] = True
+    finite_keys = ["prob_up", "prob_down", "confidence", "close"]
+    finite_keys.extend(key for key in ("stop_loss", "take_profit") if data[key] is not None)
+    if any(not math.isfinite(float(data[key])) for key in finite_keys):
+        data["error"] = True
+    if not (0.0 <= data["prob_up"] <= 100.0 and
+            0.0 <= data["prob_down"] <= 100.0 and
+            0.0 <= data["confidence"] <= 100.0 and data["close"] > 0.0):
+        data["error"] = True
+    if seen.issuperset({"prob_up", "prob_down"}) and abs(
+        data["prob_up"] + data["prob_down"] - 100.0
+    ) > 1.0:
+        data["error"] = True
+    for key in ("stop_loss", "take_profit"):
+        if data[key] is not None and data[key] <= 0:
+            data["error"] = True
+    if data["error"] and not data["raw"].strip():
+        data["raw"] = "Prediction failed or returned an incomplete/invalid report."
+    return data
 
 
 def run_predict():
     """Run predict.py and return structured result."""
     cfg = load_app_config()
-    cache_key = f"{cfg['pair']}_{cfg['timeframe']}"
+    cache_key = f"{cfg['pair']}|{cfg['timeframe']}|{cfg['forecast_horizon']}|{cfg.get('confidence_threshold', '')}"
     now = time.time()
 
     cached = _prediction_cache.get(cache_key)
     if cached and now - cached["time"] < CACHE_TTL_SECONDS:
-        return cached["data"]
+        return dict(cached["data"])
 
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
@@ -123,7 +211,10 @@ def run_predict():
     # load_app_config() intentionally returns a public/runtime view and does not
     # include the raw YAML "paths" section. Resolve artifacts from the app root
     # instead of indexing cfg["paths"] (which caused KeyError and broke /api/predict).
-    model_dir = os.path.join(BASE_DIR, "models")
+    with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
+        raw_cfg = yaml.safe_load(f) or {}
+    model_dir = raw_cfg.get("paths", {}).get("models", "models/")
+    model_dir = model_dir if os.path.isabs(model_dir) else os.path.join(BASE_DIR, model_dir)
     cfg_status = artifact_status(
         cfg["pair"].replace("=X", "").lower(),
         model_dir
@@ -163,75 +254,27 @@ def run_predict():
     stdout = result.stdout if result.stdout is not None else ""
     stderr = result.stderr if result.stderr is not None else ""
     output = stdout + stderr
-    lines  = output.splitlines()
+    data = parse_prediction_output(output, result.returncode)
 
-    data = {
-        "signal":     "UNKNOWN",
-        "prob_up":    0,
-        "prob_down":  0,
-        "confidence": 0,
-        "close":      0,
-        "timestamp":  "",
-        "stop_loss":  None,
-        "take_profit":None,
-        "raw":        output,
-        "error":      result.returncode != 0,
-    }
-
-    for line in lines:
-        l = line.strip().replace("║", "").strip()
-        if "SIGNAL" in l:
-            if "BUY"  in l: data["signal"] = "BUY"
-            elif "SELL" in l: data["signal"] = "SELL"
-            elif "FLAT" in l: data["signal"] = "FLAT"
-        elif "Prob UP" in l:
-            try: data["prob_up"] = float(l.split(":")[-1].strip().replace("%","")) * (1 if "%" not in l else 1)
-            except: pass
-        elif "Prob DOWN" in l:
-            try: data["prob_down"] = float(l.split(":")[-1].strip().replace("%",""))
-            except: pass
-        elif "Confidence" in l and "threshold" not in l.lower():
-            try: data["confidence"] = float(l.split(":")[-1].strip().replace("%",""))
-            except: pass
-        elif "Close" in l:
-            try: data["close"] = float(l.split(":")[-1].strip())
-            except: pass
-        elif "Time" in l:
-            try: data["timestamp"] = l.split(":", 1)[-1].strip()
-            except: pass
-        elif "Stop Loss" in l:
-            try: data["stop_loss"] = float(l.split(":")[-1].strip())
-            except: pass
-        elif "Take Profit" in l:
-            try: data["take_profit"] = float(l.split(":")[-1].strip())
-            except: pass
-
-    # An exited process or missing signal is not a valid prediction.
-    if result.returncode != 0 or data["signal"] == "UNKNOWN":
-        data["error"] = True
-        if not data["raw"].strip():
-            data["raw"] = "Prediction failed without diagnostic output."
+    # A failed/incomplete prediction must never be cached or persisted as valid.
+    if data["error"]:
+        if result.returncode != 0:
+            print(f"[PREDICTION ERROR] predict.py exited with code {result.returncode}", flush=True)
         return data
 
-    # predict.py prints probabilities as fractions (e.g. 0.63 -> 63%).
-    if 0.0 <= data["prob_up"] <= 1.0:
-        data["prob_up"] *= 100
-        data["prob_down"] *= 100
-        data["confidence"] *= 100
-
-    if not data["error"]:
-        _prediction_cache[cache_key] = {"time": now, "data": data}
-
-    # Persist valid prediction runs to local JSON with optional HF Dataset sync
+    cacheable = True
     if _db_available:
         try:
             run_id = save_prediction_run(data, cfg["pair"], cfg["timeframe"], cfg["forecast_horizon"])
             data["run_id"] = run_id
         except Exception as e:
-            print(f"[DB WARNING] Could not save run: {e}")
+            cacheable = False
+            print(f"[DB WARNING] Could not save run: {e}", flush=True)
 
+    # Cache only after persistence was attempted, so a failed history write can retry.
+    if cacheable:
+        _prediction_cache[cache_key] = {"time": time.time(), "data": dict(data)}
     return data
-
 
 def load_trained_pairs():
     with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
@@ -374,15 +417,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        length = int(self.headers.get("Content-Length", 0))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except (TypeError, ValueError):
+            self.send_json({"error": "Invalid Content-Length."}, 400)
+            return
+        if length < 0 or length > 4096:
+            self.send_json({"error": "Request body is too large."}, 413)
+            return
         body = self.rfile.read(length) if length > 0 else b"{}"
         try:
             payload = json.loads(body)
-        except Exception:
-            payload = {}
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self.send_json({"error": "Request body must be valid JSON."}, 400)
+            return
+        if not isinstance(payload, dict):
+            self.send_json({"error": "Request body must be a JSON object."}, 400)
+            return
 
         if path == "/api/set_pair":
-            new_pair = payload.get("pair", "").strip()
+            raw_pair = payload.get("pair", "")
+            if not isinstance(raw_pair, str):
+                self.send_json({"error": "Pair must be a string."}, 400)
+                return
+            new_pair = raw_pair.strip().upper()
             if not new_pair:
                 self.send_json({"error": "No pair provided"}, 400)
                 return
