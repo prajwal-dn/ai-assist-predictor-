@@ -110,11 +110,20 @@ def load_app_config(pair_override: str = None):
     else:
         tradingview_symbol = f"FX:{tv_symbol}"
 
+    if timeframe == "1h":
+        horizon_label = f"{horizon} hour" + ("" if horizon == 1 else "s")
+    elif timeframe == "4h":
+        total_hours = horizon * 4
+        horizon_label = f"{total_hours} hour" + ("" if total_hours == 1 else "s")
+    else:
+        horizon_label = f"{horizon} day" + ("" if horizon == 1 else "s")
+
     return {
         "pair": pair,
         "pair_code": pair_code,
         "timeframe": timeframe,
         "forecast_horizon": horizon,
+        "forecast_horizon_label": horizon_label,
         "confidence_threshold": confidence_threshold,
         "tradingview_symbol": tradingview_symbol,
         "tradingview_interval": interval_map.get(timeframe, "60"),
