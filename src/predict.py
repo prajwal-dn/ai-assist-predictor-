@@ -16,6 +16,7 @@ import joblib
 import pandas as pd
 import numpy as np
 import yfinance as yf
+import requests
 from datetime import datetime, timedelta
 
 # Import our own modules
