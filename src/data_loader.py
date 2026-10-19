@@ -14,10 +14,20 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def load_config(path: str = "config.yaml") -> dict:
+
+def project_path(path: str) -> str:
+    return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+
+
+def load_config(path: str = None) -> dict:
+    path = project_path(path or "config.yaml")
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config file: {path}")
+    return cfg
 
 
 def _resample_4h(df: pd.DataFrame) -> pd.DataFrame:
@@ -81,6 +91,7 @@ def download_data(pair: str, years: int, timeframe: str) -> pd.DataFrame:
 
 
 def save_data(df: pd.DataFrame, output_dir: str, pair: str, timeframe: str) -> str:
+    output_dir = project_path(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     filename = f"{pair.replace('=X','').lower()}_{timeframe}.csv"
     filepath = os.path.join(output_dir, filename)
