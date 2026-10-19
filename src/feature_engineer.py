@@ -171,12 +171,21 @@ def main():
     raw_file = os.path.join(raw_dir, f"{pair}_{timeframe}.csv")
     df = pd.read_csv(raw_file, parse_dates=["datetime"])
 
-    # Try to load daily data for trend context
+    # Intraday training and live inference must agree on whether daily
+    # context features exist. Never silently train a different feature schema
+    # because the daily file is missing.
     df_daily = None
     daily_file = os.path.join(raw_dir, f"{pair}_1d.csv")
-    if timeframe != "1d" and os.path.exists(daily_file):
+    if timeframe != "1d":
+        if not os.path.isfile(daily_file):
+            raise FileNotFoundError(
+                f"Daily trend data is required for {timeframe} feature schema: {daily_file}. "
+                "Run src/data_loader.py before feature engineering."
+            )
         print(f"[INFO] Merging Daily context from {daily_file}")
         df_daily = pd.read_csv(daily_file, parse_dates=["datetime"])
+        if df_daily.empty:
+            raise ValueError(f"Daily trend data is empty: {daily_file}")
 
     df = add_features(df, cfg, df_daily, daily_context_mode=cfg["features"].get("daily_context_mode", "completed"))
 
