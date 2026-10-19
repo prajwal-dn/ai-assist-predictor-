@@ -51,8 +51,8 @@ def load_config(path: str = None) -> dict:
     if isinstance(cfg.get("forecast_horizon"), bool) or not isinstance(cfg.get("forecast_horizon"), int) or cfg["forecast_horizon"] < 1:
         raise ValueError("forecast_horizon must be a positive integer number of candles.")
     threshold = float(cfg.get("confidence_threshold", 0.0))
-    if not math.isfinite(threshold) or not 0 < threshold < 1:
-        raise ValueError("confidence_threshold must be between 0 and 1.")
+    if not math.isfinite(threshold) or not 0.5 < threshold < 1:
+        raise ValueError("confidence_threshold must be greater than 0.5 and less than 1.")
     return cfg
 
 
@@ -251,8 +251,8 @@ def predict_signal(
     threshold: float, daily_context_mode: str = "legacy"
 ) -> dict:
     """Engineer valid candles, then predict on the last feature row."""
-    if not math.isfinite(float(threshold)) or not 0.0 < float(threshold) < 1.0:
-        raise ValueError("confidence_threshold must be between 0 and 1.")
+    if not math.isfinite(float(threshold)) or not 0.5 < float(threshold) < 1.0:
+        raise ValueError("confidence_threshold must be greater than 0.5 and less than 1.")
     cfg = load_config()
     df_feat = add_features(df, cfg, df_daily, daily_context_mode=daily_context_mode)
     if df_feat.empty:
