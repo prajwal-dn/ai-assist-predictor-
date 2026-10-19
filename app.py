@@ -87,8 +87,8 @@ def load_app_config(pair_override: str = None):
     try:
         confidence_threshold = float(cfg.get("confidence_threshold"))
     except (TypeError, ValueError):
-        raise ValueError("confidence_threshold must be a number between 0 and 1.")
-    if not math.isfinite(confidence_threshold) or not 0 < confidence_threshold < 1:
+        raise ValueError("confidence_threshold must be greater than 0.5 and less than 1.")
+    if not math.isfinite(confidence_threshold) or not 0.5 < confidence_threshold < 1:
         raise ValueError("confidence_threshold must be a number between 0 and 1.")
 
     pair = cfg["pair"]
