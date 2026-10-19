@@ -2,8 +2,8 @@
 labeller.py
 -----------
 Reads feature-engineered data and adds a binary target column:
-  1 = price is HIGHER than current close after N hours  (BUY signal)
-  0 = price is LOWER or equal after N hours             (SELL signal)
+  1 = price is HIGHER than current close after N candles (UP label)
+  0 = price is LOWER or equal after N candles            (DOWN label)
 
 Also splits data into train and test sets and saves them separately.
 
