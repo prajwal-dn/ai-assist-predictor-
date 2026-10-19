@@ -39,6 +39,25 @@ class PredictionOutputParserTests(unittest.TestCase):
     def test_probabilities_that_do_not_sum_to_one_are_rejected(self):
         self.assertTrue(parse_prediction_output(self.report("31.5", "80.0", "80.0"), 0)["error"])
 
+    def test_directional_signal_requires_valid_stop_and_target(self):
+        output = "\n".join([
+            "Time : 2026-10-18T19:00", "Close : 101.13", "SIGNAL : BUY",
+            "Prob UP : 70%", "Prob DOWN : 30%", "Confidence: 70%",
+        ])
+        self.assertTrue(parse_prediction_output(output, 0)["error"])
+
+    def test_confidence_must_match_the_larger_probability(self):
+        output = self.report("31.5", "68.5", "98.0")
+        self.assertTrue(parse_prediction_output(output, 0)["error"])
+
+    def test_buy_stop_and_target_must_bracket_close(self):
+        output = "\n".join([
+            "Time : 2026-10-18T19:00", "Close : 101.13", "SIGNAL : BUY",
+            "Prob UP : 70%", "Prob DOWN : 30%", "Confidence: 70%",
+            "Stop Loss : 102.00", "Take Profit: 98.00",
+        ])
+        self.assertTrue(parse_prediction_output(output, 0)["error"])
+
     def test_request_scoped_pair_does_not_mutate_config(self):
         config_path = Path(BASE_DIR) / "config.yaml"
         original = config_path.read_text(encoding="utf-8")
