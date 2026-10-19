@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ import pandas as pd
 from src.feature_engineer import add_features
 from src.labeller import add_labels, split_and_save
 from src.backtest import simulate_trades, quote_currency
+from src.predict import _drop_incomplete_candles, fetch_recent_data, load_model_artifacts
 
 
 def feature_config():
@@ -44,6 +46,45 @@ class FeatureEngineeringTests(unittest.TestCase):
         features = add_features(rows, feature_config(), daily, daily_context_mode="legacy")
         self.assertEqual(int(features.iloc[-1]["feature_schema_version"]), 1)
 
+
+
+class MarketDataTests(unittest.TestCase):
+    def test_incomplete_last_candle_is_removed(self):
+        frame = pd.DataFrame({
+            "datetime": pd.to_datetime(["2025-01-01T00:00:00Z", "2025-01-01T01:00:00Z"], utc=True).tz_localize(None),
+            "open": [10.0, 11.0], "high": [11.0, 12.0],
+            "low": [9.0, 10.0], "close": [10.5, 11.5], "volume": [100.0, 100.0],
+        })
+        completed = _drop_incomplete_candles(
+            frame, "1h", now=pd.Timestamp("2025-01-01T01:30:00Z")
+        )
+        self.assertEqual(len(completed), 1)
+        self.assertEqual(completed.iloc[0]["datetime"], pd.Timestamp("2025-01-01T00:00:00"))
+
+    @patch("src.predict.requests.get")
+    def test_twelvedata_timeout_and_chronological_normalization(self, mocked_get):
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"values": [
+            {"datetime": "2025-01-01 02:00:00", "open": "2", "high": "3", "low": "1", "close": "2.5"},
+            {"datetime": "2025-01-01 01:00:00", "open": "1", "high": "2", "low": ".5", "close": "1.5"},
+        ]}
+        mocked_get.return_value = response
+        result = fetch_recent_data("EURUSD=X", "1h", {"twelvedata_api_key": "test-key"})
+        self.assertEqual(len(result), 2)
+        self.assertLess(result.iloc[0]["datetime"], result.iloc[1]["datetime"])
+        self.assertEqual(mocked_get.call_args.kwargs["timeout"], (5, 15))
+        self.assertNotIn("test-key", str(mocked_get.call_args.args))
+
+    def test_lfs_pointer_is_not_loaded_as_a_model_binary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for name in ("eurusd_xgboost.pkl", "eurusd_scaler.pkl", "eurusd_feature_cols.pkl"):
+                Path(directory, name).write_text(
+                    "version https://git-lfs.github.com/spec/v1\\noid sha256:deadbeef\\nsize 12\\n",
+                    encoding="utf-8",
+                )
+            with self.assertRaisesRegex(ValueError, "Git LFS pointer"):
+                load_model_artifacts(directory, "eurusd", timeframe="1h")
 
 class LabellingTests(unittest.TestCase):
     def test_add_labels_removes_unknown_future_rows(self):
