@@ -269,8 +269,12 @@ def compute_max_drawdown(cumulative_pnl: pd.Series, starting_balance: float = 10
     return drawdown.min()
 
 
-def plot_results(df: pd.DataFrame, trades_df: pd.DataFrame, pair: str):
-    """Save equity curve and signal chart to models/ folder."""
+def plot_results(
+    df: pd.DataFrame, trades_df: pd.DataFrame, pair: str,
+    starting_balance: float = 10_000.0, currency: str = "QUOTE",
+    output_dir: str = None,
+):
+    """Save a chart using the same P&L currency and starting balance as simulation."""
     fig, axes = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
 
     # Price + signals
@@ -302,15 +306,17 @@ def plot_results(df: pd.DataFrame, trades_df: pd.DataFrame, pair: str):
     # Equity curve
     ax3 = axes[2]
     if not trades_df.empty:
-        equity = 10_000 + trades_df["pnl_usd"].cumsum()
-        ax3.plot(pd.to_datetime(trades_df["entry_time"]), equity,
+        equity = starting_balance + trades_df["pnl_quote"].cumsum()
+        ax3.plot(pd.to_datetime(trades_df["exit_time"]), equity,
                  color="#e67e22", linewidth=1.2)
-        ax3.axhline(y=10_000, color="gray", linestyle="--", linewidth=0.8)
-    ax3.set_ylabel("Equity ($)")
+        ax3.axhline(y=starting_balance, color="gray", linestyle="--", linewidth=0.8)
+    ax3.set_ylabel(f"Equity ({currency})")
     ax3.set_xlabel("Date")
 
     plt.tight_layout()
-    out_path = f"models/{pair}_backtest.png"
+    output_dir = output_dir or os.path.join(BASE_DIR, "models")
+    os.makedirs(output_dir, exist_ok=True)
+    out_path = os.path.join(output_dir, f"{pair}_backtest.png")
     plt.savefig(out_path, dpi=120, bbox_inches="tight")
     print(f"[INFO] Chart saved → {out_path}")
     plt.close()
@@ -343,13 +349,16 @@ def main():
     trades  = simulate_trades(test_df, cfg, horizon, starting_balance=starting_balance)
 
     print_summary(trades, currency=currency, starting_balance=starting_balance)
-    plot_results(test_df, trades, pair)
 
-    # Save trades CSV
+    # All backtest outputs honor the configured model directory.
     model_dir = cfg["paths"]["models"]
     if not os.path.isabs(model_dir):
         model_dir = os.path.join(BASE_DIR, model_dir)
     os.makedirs(model_dir, exist_ok=True)
+    plot_results(test_df, trades, pair, starting_balance=starting_balance,
+                 currency=currency, output_dir=model_dir)
+
+    # Save trades CSV
     trades_file = os.path.join(model_dir, f"{pair}_trades.csv")
     trades.to_csv(trades_file, index=False)
     print(f"[INFO] Trade log saved → {trades_file}")
