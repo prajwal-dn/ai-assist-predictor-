@@ -10,6 +10,7 @@ from src.feature_engineer import add_features
 from src.labeller import add_labels, split_and_save
 from src.backtest import simulate_trades, quote_currency
 from src.predict import _drop_incomplete_candles, fetch_recent_data, load_model_artifacts
+import src.db as db_module
 
 
 def feature_config():
@@ -18,6 +19,42 @@ def feature_config():
         "atr_period": 14, "bb_period": 20, "bb_std": 2,
         "daily_context_mode": "completed",
     }}
+
+
+
+class HistoryPersistenceTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.history_path = Path(self.tempdir.name) / "history.json"
+        self.previous_cache = db_module._cache
+        db_module._cache = None
+        self.path_patcher = patch.object(db_module, "_get_local_path", return_value=str(self.history_path))
+        self.repo_patcher = patch.object(db_module, "_get_repo_id", return_value=None)
+        self.api_patcher = patch.object(db_module, "_get_api", return_value=None)
+        self.path_patcher.start()
+        self.repo_patcher.start()
+        self.api_patcher.start()
+
+    def tearDown(self):
+        self.path_patcher.stop()
+        self.repo_patcher.stop()
+        self.api_patcher.stop()
+        db_module._cache = self.previous_cache
+        self.tempdir.cleanup()
+
+    def test_history_file_is_atomically_written_as_json(self):
+        db_module._cache = [{"id": 1, "trade_signal": "BUY"}]
+        db_module._save_data()
+        self.assertEqual(__import__("json").loads(self.history_path.read_text(encoding="utf-8")), db_module._cache)
+        self.assertFalse(list(Path(self.tempdir.name).glob(".history-*.tmp")))
+
+    def test_corrupt_history_is_preserved_for_recovery(self):
+        self.history_path.write_text("{corrupt json", encoding="utf-8")
+        self.assertEqual(db_module._load_data(), [])
+        backups = list(Path(self.tempdir.name).glob("history.json.corrupt-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(backups[0].read_text(encoding="utf-8"), "{corrupt json")
+        self.assertFalse(self.history_path.exists())
 
 
 class FeatureEngineeringTests(unittest.TestCase):
