@@ -68,6 +68,19 @@ def normalize_pair(pair: str) -> str:
     return value
 
 
+def format_forecast_horizon(timeframe: str, horizon: int) -> str:
+    """Describe the forecast in elapsed units, based on the model's candle timeframe."""
+    if timeframe == "1h":
+        amount, unit = horizon, "hour"
+    elif timeframe == "4h":
+        amount, unit = horizon * 4, "hour"
+    elif timeframe == "1d":
+        amount, unit = horizon, "day"
+    else:
+        raise ValueError("timeframe must be one of: 1h, 4h, 1d.")
+    return f"{amount} {unit}" + ("" if amount == 1 else "s")
+
+
 def load_app_config(pair_override: str = None):
     with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
@@ -110,13 +123,7 @@ def load_app_config(pair_override: str = None):
     else:
         tradingview_symbol = f"FX:{tv_symbol}"
 
-    if timeframe == "1h":
-        horizon_label = f"{horizon} hour" + ("" if horizon == 1 else "s")
-    elif timeframe == "4h":
-        total_hours = horizon * 4
-        horizon_label = f"{total_hours} hour" + ("" if total_hours == 1 else "s")
-    else:
-        horizon_label = f"{horizon} day" + ("" if horizon == 1 else "s")
+    horizon_label = format_forecast_horizon(timeframe, horizon)
 
     return {
         "pair": pair,
