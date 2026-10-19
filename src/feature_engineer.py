@@ -64,9 +64,13 @@ def add_features(
             raise ValueError("Daily context contains no valid rows.")
         df_daily["daily_sma"] = ta.trend.SMAIndicator(df_daily["close"], window=50).sma_indicator()
         df_daily["daily_rsi"] = ta.momentum.RSIIndicator(df_daily["close"], window=14).rsi()
+        # Map each completed daily candle's indicators to the next calendar
+        # date. This keeps today's intraday rows populated even though the
+        # current unfinished daily candle is intentionally filtered out.
         if mode == "completed":
-            df_daily[["daily_sma", "daily_rsi"]] = df_daily[["daily_sma", "daily_rsi"]].shift(1)
-        df_daily["date_key"] = df_daily["datetime"].dt.date
+            df_daily["date_key"] = (df_daily["datetime"] + pd.Timedelta(days=1)).dt.date
+        else:
+            df_daily["date_key"] = df_daily["datetime"].dt.date
         df["date_key"] = df["datetime"].dt.date
         df = df.merge(
             df_daily[["date_key", "daily_sma", "daily_rsi"]],
