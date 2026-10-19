@@ -14,10 +14,20 @@ import pandas as pd
 import numpy as np
 import ta
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def load_config(path: str = "config.yaml") -> dict:
+
+def project_path(path: str) -> str:
+    return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+
+
+def load_config(path: str = None) -> dict:
+    path = project_path(path or "config.yaml")
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config file: {path}")
+    return cfg
 
 
 def add_features(
@@ -148,8 +158,8 @@ def main():
     cfg       = load_config()
     pair      = cfg["pair"].replace("=X", "").lower()
     timeframe = cfg["timeframe"]
-    raw_dir   = cfg["paths"]["raw_data"]
-    proc_dir  = cfg["paths"]["processed_data"]
+    raw_dir   = project_path(cfg["paths"]["raw_data"])
+    proc_dir  = project_path(cfg["paths"]["processed_data"])
 
     raw_file = os.path.join(raw_dir, f"{pair}_{timeframe}.csv")
     df = pd.read_csv(raw_file, parse_dates=["datetime"])
