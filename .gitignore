@@ -25,12 +25,16 @@ wheels/
 data/raw/
 data/processed/
 data/labelled/
+data/history.json*
+
 models/*
 !models/*_xgboost.pkl
 !models/*_scaler.pkl
 !models/*_feature_cols.pkl
+!models/*_metadata.json
 models/*.csv
 models/*.png
+models/*.tmp
 retrain_log.json
 
 # Environment
