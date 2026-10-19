@@ -28,4 +28,4 @@ Each run also uploads a downloadable GitHub Actions artifact with 90-day retenti
 - The workflow checks out model artifacts with Git LFS enabled.
 - Existing model artifacts without metadata use their legacy feature contract. This workflow observes the current saved model; it does not retrain or certify accuracy.
 - Keep this in paper-trading mode. Review drawdown, trade counts, costs, missed/failed runs, and out-of-sample performance over many market periods before making any live-trading decisions.
-- The hourly schedule runs only after the workflow exists on the repository's default branch. workflow_dispatch can be used on the feature branch before merge.
+- The workflow must be merged into the repository's default branch before GitHub enables workflow_dispatch or the hourly schedule. After merging, run Actions → Hourly paper trading → Run workflow to begin the first cycle.
