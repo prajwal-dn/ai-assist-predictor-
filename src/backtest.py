@@ -152,7 +152,10 @@ def simulate_trades(
             continue
         if i + horizon >= len(candles):
             break
-        entry = float(row["close"])
+        # The signal becomes available after candle i closes; entering at that
+        # same close is optimistic. Execute at the next candle's open instead.
+        entry_row = candles.iloc[i + 1]
+        entry = float(entry_row["open"])
         atr = float(row["atr"])
         stop_size = atr * atr_mult
         if entry <= 0 or atr <= 0 or not math.isfinite(stop_size) or stop_size <= 0:
@@ -199,11 +202,16 @@ def simulate_trades(
                 exit_price, exit_index, exit_reason = target_price, j, "TAKE_PROFIT"
                 break
 
-        pnl = direction * (exit_price - entry) * units
+        raw_pnl = direction * (exit_price - entry) * units
         equity_before = equity
-        equity = max(0.0, equity + pnl)
+        # A simulated account cannot have negative equity. Keep the reported
+        # ledger internally consistent if a stop gap exceeds available equity.
+        pnl = max(-equity_before, raw_pnl)
+        if raw_pnl < -equity_before:
+            exit_reason = "ACCOUNT_BLOWN"
+        equity = max(0.0, equity_before + pnl)
         trade = {
-            "entry_time": row["datetime"],
+            "entry_time": entry_row["datetime"],
             "exit_time": candles.iloc[exit_index]["datetime"],
             "direction": "BUY" if direction == 1 else "SELL",
             "entry_price": entry,
@@ -218,6 +226,7 @@ def simulate_trades(
             "equity_before": equity_before,
             "equity_after": equity,
             "pnl_quote": pnl,
+            "raw_pnl_quote": raw_pnl,
             "pnl_pct": (pnl / equity_before) * 100.0,
             "win": int(pnl > 0),
         }
@@ -262,11 +271,20 @@ def print_summary(trades_df: pd.DataFrame, currency: str = "QUOTE",
 
 
 def compute_max_drawdown(cumulative_pnl: pd.Series, starting_balance: float = 10_000.0) -> float:
-    """Max peak-to-trough drawdown as a percentage of peak equity."""
-    equity   = starting_balance + cumulative_pnl
-    peak     = equity.cummax()
-    drawdown = (equity - peak) / peak * 100
-    return drawdown.min()
+    """Maximum peak-to-trough drawdown magnitude, including starting equity."""
+    if not math.isfinite(float(starting_balance)) or starting_balance <= 0:
+        raise ValueError("starting_balance must be finite and positive.")
+    pnl = pd.to_numeric(cumulative_pnl, errors="coerce").reset_index(drop=True)
+    if not np.isfinite(pnl.to_numpy(dtype=float)).all():
+        raise ValueError("Cumulative P&L contains non-finite values.")
+    equity = pd.concat([
+        pd.Series([float(starting_balance)]),
+        float(starting_balance) + pnl,
+    ], ignore_index=True)
+    peak = equity.cummax()
+    drawdown = (equity - peak) / peak.replace(0, np.nan) * 100
+    worst = float(drawdown.min()) if drawdown.notna().any() else 0.0
+    return max(0.0, -worst)
 
 
 def plot_results(
