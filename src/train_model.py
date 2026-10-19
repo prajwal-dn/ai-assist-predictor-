@@ -112,37 +112,47 @@ def train(train_df: pd.DataFrame, cfg: dict):
 
 def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
              threshold: float) -> dict:
-    X_test = test_df[feature_cols].values
-    y_test = test_df["target"].values
+    """Evaluate the saved model contract on a chronological, unseen holdout."""
+    if not 0.5 < float(threshold) < 1.0:
+        raise ValueError("confidence_threshold must be greater than 0.5 and less than 1.")
+    if test_df.empty:
+        raise ValueError("Test dataset is empty.")
+    missing = [column for column in feature_cols if column not in test_df.columns]
+    if missing:
+        raise ValueError(f"Test dataset is missing model features: {missing}")
+    X_test = test_df[feature_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    if not np.isfinite(X_test).all():
+        raise ValueError("Test features contain non-finite values.")
+    y_test = pd.to_numeric(test_df["target"], errors="coerce").to_numpy()
+    if not np.isfinite(y_test).all() or not np.isin(y_test, [0, 1]).all():
+        raise ValueError("Test target must contain only finite binary labels 0/1.")
+
     X_test = scaler.transform(X_test)
+    probs = np.asarray(model.predict_proba(X_test), dtype=float)
+    classes = np.asarray(getattr(model, "classes_", [0, 1]))
+    up_idx = np.flatnonzero(classes == 1)
+    if probs.ndim != 2 or probs.shape[0] != len(test_df) or len(up_idx) != 1:
+        raise ValueError("Model probabilities must contain exactly one class labelled 1 (UP).")
+    proba_up = probs[:, int(up_idx[0])]
+    if not np.isfinite(proba_up).all() or ((proba_up < 0) | (proba_up > 1)).any():
+        raise ValueError("Model returned invalid probabilities.")
 
-    # Raw probabilities
-    proba  = model.predict_proba(X_test)[:, 1]
-
-    # Apply confidence threshold — predict only when confident enough
-    y_pred = np.where(proba >= threshold, 1,
-             np.where(proba <= (1 - threshold), 0, -1))
-
-    # Rows where model has enough confidence
+    y_pred = np.where(proba_up >= threshold, 1,
+             np.where(proba_up <= (1 - threshold), 0, -1))
     confident_mask = y_pred != -1
-    confident_pct  = confident_mask.mean() * 100
-
+    confident_pct = float(confident_mask.mean() * 100)
     y_pred_confident = y_pred[confident_mask]
     y_true_confident = y_test[confident_mask]
 
     metrics = {
-        "all_accuracy":         accuracy_score(y_test, (proba >= 0.5).astype(int)),
-        "confident_pct":        confident_pct,
-        "confident_accuracy":   accuracy_score(y_true_confident, y_pred_confident)
-                                if confident_mask.sum() > 0 else 0,
-        "precision":            precision_score(y_true_confident, y_pred_confident,
-                                               zero_division=0),
-        "recall":               recall_score(y_true_confident, y_pred_confident,
-                                            zero_division=0),
-        "f1":                   f1_score(y_true_confident, y_pred_confident,
-                                        zero_division=0),
+        "all_accuracy": float(accuracy_score(y_test, (proba_up >= 0.5).astype(int))),
+        "confident_pct": confident_pct,
+        "confident_accuracy": float(accuracy_score(y_true_confident, y_pred_confident))
+                              if confident_mask.sum() else 0.0,
+        "precision": float(precision_score(y_true_confident, y_pred_confident, zero_division=0)),
+        "recall": float(recall_score(y_true_confident, y_pred_confident, zero_division=0)),
+        "f1": float(f1_score(y_true_confident, y_pred_confident, zero_division=0)),
     }
-
     print("\n--- Evaluation Results ---")
     print(f"  All-row accuracy (50% threshold) : {metrics['all_accuracy']:.3f}")
     print(f"  Rows above confidence threshold  : {confident_pct:.1f}%")
@@ -155,7 +165,6 @@ def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
         y_true_confident, y_pred_confident, labels=[0, 1],
         target_names=["DOWN", "UP"], zero_division=0
     ))
-
     return metrics
 
 
