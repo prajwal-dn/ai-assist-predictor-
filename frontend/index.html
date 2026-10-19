@@ -218,8 +218,7 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
           <div class="chart-toolbar" aria-label="Chart controls">
             <div class="chart-mode-tabs" role="group" aria-label="Chart views">
               <button type="button" class="chart-mode active" data-chart-mode="price" aria-pressed="true" onclick="setChartMode('price')">Price action</button>
-              <button type="button" class="chart-mode" data-chart-mode="indicators" aria-pressed="false" onclick="setChartMode('indicators')">Indicators</button>
-              <button type="button" class="chart-mode" data-chart-mode="compare" aria-pressed="false" onclick="setChartMode('compare')">Compare</button>
+              <button type="button" class="chart-mode" data-chart-mode="indicators" aria-pressed="false" onclick="setChartMode('indicators')">Model details</button>
             </div>
             <div class="chart-timeframes" role="group" aria-label="Chart timeframe">
               <button type="button" class="chart-timeframe" data-interval="1" onclick="setChartInterval('1')">1m</button>
@@ -406,13 +405,14 @@ function setChartInterval(interval) {
 }
 
 function setChartMode(mode) {
+  const selectedMode = mode === "indicators" ? "indicators" : "price";
   document.querySelectorAll(".chart-mode").forEach(btn => {
-    const active = btn.dataset.chartMode === mode;
+    const active = btn.dataset.chartMode === selectedMode;
     btn.classList.toggle("active", active);
     btn.setAttribute("aria-pressed", String(active));
   });
-  const target = mode === "indicators" ? document.getElementById("model-info") : mode === "compare" ? document.getElementById("recent-predictions") : document.getElementById("market-chart");
-  if (target && mode !== "price") target.scrollIntoView({behavior:"smooth",block:"center"});
+  const target = selectedMode === "indicators" ? document.getElementById("model-info") : document.getElementById("market-chart");
+  if (target) target.scrollIntoView({behavior:"smooth",block:"center"});
 }
 
 
@@ -815,6 +815,10 @@ async function initApp() {
   applyTheme(theme);
   await Promise.all([loadSavedHistory(),loadHistoryStorageStatus()]);
   setAutoRefresh();
+  syncAppearanceChoices();
+  const activeView = document.querySelector('.main-area')?.dataset.activeView || 'dashboard';
+  if (activeView === 'markets') renderMarketsPage();
+  if (activeView === 'models') renderModelsPage();
 }
 
 
