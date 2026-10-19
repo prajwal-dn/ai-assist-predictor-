@@ -11,6 +11,7 @@ Usage:
 import os
 import json
 import math
+import re
 import yaml
 import joblib
 import pandas as pd
@@ -35,6 +36,14 @@ def load_config(path: str = None) -> dict:
         path = os.path.join(BASE_DIR, path)
     with open(path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    pair_override = os.environ.get("ASSET_PREDICTOR_PAIR")
+    if pair_override:
+        pair_override = pair_override.strip().upper()
+        if len(pair_override) == 6 and "-" not in pair_override and not pair_override.endswith("=X"):
+            pair_override += "=X"
+        if not re.fullmatch(r"[A-Z0-9-]{3,12}(?:=X)?", pair_override):
+            raise ValueError("ASSET_PREDICTOR_PAIR is not a valid market symbol.")
+        cfg["pair"] = pair_override
     if not isinstance(cfg, dict):
         raise ValueError(f"Invalid application configuration at {path}")
     return cfg
@@ -158,6 +167,30 @@ def _resample_4h(df: pd.DataFrame) -> pd.DataFrame:
     return _normalize_ohlcv(bars)
 
 
+
+def _drop_incomplete_candles(
+    df: pd.DataFrame, timeframe: str, now: pd.Timestamp = None
+) -> pd.DataFrame:
+    """Exclude the currently forming bar so live inference only sees completed candles."""
+    duration_hours = {"1h": 1, "4h": 4, "1d": 24}
+    if timeframe not in duration_hours:
+        raise ValueError(f"Unsupported prediction timeframe: {timeframe}")
+    if df is None or df.empty:
+        raise ValueError("No candles available to filter.")
+    if now is None:
+        now = pd.Timestamp.now(tz="UTC").tz_localize(None)
+    else:
+        now = pd.Timestamp(now)
+        if now.tzinfo is not None:
+            now = now.tz_convert("UTC").tz_localize(None)
+    cutoff = now - pd.Timedelta(hours=duration_hours[timeframe])
+    completed = df.loc[pd.to_datetime(df["datetime"], errors="coerce") <= cutoff].copy()
+    completed.reset_index(drop=True, inplace=True)
+    if completed.empty:
+        raise ValueError(f"No completed {timeframe} candles are available yet.")
+    return completed
+
+
 def fetch_yfinance_data(pair: str, timeframe: str) -> pd.DataFrame:
     """Fetch enough history for the requested timeframe and rolling features."""
     print(f"[WARNING] Falling back to yfinance for {timeframe} data.")
@@ -170,7 +203,7 @@ def fetch_yfinance_data(pair: str, timeframe: str) -> pd.DataFrame:
     df = _normalize_ohlcv(df)
     if timeframe == "4h":
         df = _resample_4h(df)
-    return df
+    return _drop_incomplete_candles(df, timeframe)
 
 
 def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
@@ -199,7 +232,8 @@ def fetch_recent_data(pair: str, timeframe: str, cfg: dict) -> pd.DataFrame:
             message = payload.get("message", "Malformed TwelveData response") if isinstance(payload, dict) else "Malformed TwelveData response"
             print(f"[WARNING] TwelveData returned no candles ({message}); falling back to yfinance.")
             return fetch_yfinance_data(pair, timeframe)
-        return _normalize_ohlcv(pd.DataFrame(payload["values"]))
+        candles = _normalize_ohlcv(pd.DataFrame(payload["values"]))
+        return _drop_incomplete_candles(candles, timeframe)
     except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
         print(f"[WARNING] TwelveData request failed ({type(exc).__name__}); falling back to yfinance.")
         return fetch_yfinance_data(pair, timeframe)
