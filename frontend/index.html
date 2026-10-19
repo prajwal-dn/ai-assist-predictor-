@@ -430,9 +430,10 @@ function setChartMode(mode) {
 }
 
 
-async function loadAppConfig() {
+async function loadAppConfig(pairOverride = null) {
   try {
-    const res = await fetch(window.assetPredictorApiUrl('/api/config'));
+    const configUrl = '/api/config' + (pairOverride ? '?pair=' + encodeURIComponent(pairOverride) : '');
+    const res = await fetch(window.assetPredictorApiUrl(configUrl));
     if (!res.ok) throw new Error('Could not load application configuration.');
     const cfg = await res.json();
     const pairCode = String(cfg.pair_code || cfg.pair || 'Unknown').toUpperCase();
@@ -494,15 +495,9 @@ async function onPairChange() {
   document.getElementById('refresh-btn').disabled = true;
 
   try {
-    const response = await fetch(window.assetPredictorApiUrl('/api/set_pair'), {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({pair})
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || 'This market is not available.');
-    const cfg = await loadAppConfig();
+    const cfg = await loadAppConfig(pair);
     if (!cfg) return;
+    if (!cfg.model_exists) throw new Error(cfg.model_status || 'This market is not available.');
     document.getElementById('refresh-btn').disabled = !cfg.model_exists;
 
     document.getElementById('signal-val').textContent = '—';
@@ -541,7 +536,9 @@ async function fetchSignal() {
   let cfg = null;
 
   try {
-    const configRes = await fetch(window.assetPredictorApiUrl('/api/config'));
+    const selectedPair = sel.value;
+    const configUrl = '/api/config?pair=' + encodeURIComponent(selectedPair);
+    const configRes = await fetch(window.assetPredictorApiUrl(configUrl));
     if (!configRes.ok) throw new Error('Could not check model readiness.');
     cfg = await configRes.json();
     if (!cfg.model_exists) {
@@ -563,7 +560,7 @@ async function fetchSignal() {
   document.getElementById('result-state').textContent = 'Analyzing';
 
   try {
-    const res = await fetch(window.assetPredictorApiUrl('/api/predict'));
+    const res = await fetch(window.assetPredictorApiUrl('/api/predict?pair=' + encodeURIComponent(selectedPair)));
     const data = await res.json();
     if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
       const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
