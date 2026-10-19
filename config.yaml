@@ -43,6 +43,8 @@ features:
   atr_period: 14
   bb_period: 20       # Bollinger Bands
   bb_std: 2
+  # New retrains use prior completed daily bars; legacy saved models declare legacy in metadata.
+  daily_context_mode: "completed"
 
 # Risk management
 risk:
