@@ -133,7 +133,7 @@ class BacktestTests(unittest.TestCase):
     def test_stop_loss_is_applied_and_position_does_not_overlap(self):
         candles = pd.DataFrame({
             "datetime": pd.date_range("2025-01-01", periods=4, freq="h"),
-            "open": [100, 100, 100, 100], "high": [101, 100.5, 103, 101],
+            "open": [100, 101, 100, 100], "high": [101, 102, 103, 101],
             "low": [99, 98, 99.5, 99], "close": [100, 98.5, 102, 100],
             "atr": [1, 1, 1, 1], "signal": [1, 0, -1, 0],
             "confidence": [.8, .6, .7, .5],
@@ -145,9 +145,16 @@ class BacktestTests(unittest.TestCase):
         self.assertEqual(len(trades), 1)
         first = trades.iloc[0]
         self.assertIn(first["exit_reason"], {"STOP_LOSS", "STOP_LOSS_GAP", "STOP_LOSS_AMBIGUOUS"})
-        self.assertAlmostEqual(float(first["exit_price"]), 99.0)
+        self.assertAlmostEqual(float(first["entry_price"]), 101.0)
+        self.assertEqual(first["entry_time"], pd.Timestamp("2025-01-01 01:00:00"))
+        self.assertAlmostEqual(float(first["exit_price"]), 100.0)
         self.assertAlmostEqual(float(first["pnl_quote"]), -100.0)
         self.assertEqual(first["direction"], "BUY")
+
+    def test_drawdown_includes_initial_account_balance(self):
+        from src.backtest import compute_max_drawdown
+        pnl = pd.Series([-1000.0, -500.0, 200.0])
+        self.assertAlmostEqual(compute_max_drawdown(pnl, starting_balance=10_000.0), 10.0)
 
     def test_quote_currency_is_reported_correctly(self):
         self.assertEqual(quote_currency("EURUSD=X"), "USD")
