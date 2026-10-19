@@ -131,6 +131,26 @@ class FeatureEngineeringTests(unittest.TestCase):
         self.assertTrue(np.isfinite(float(newest["daily_sma"])))
         self.assertAlmostEqual(float(newest["daily_sma"]), float(np.mean(daily_close[130:180])))
 
+    def test_completed_daily_context_survives_weekend_gap(self):
+        daily_dates = pd.bdate_range(end="2025-10-03", periods=180)
+        daily_close = np.arange(1.0, 181.0)
+        daily = pd.DataFrame({"datetime": daily_dates, "close": daily_close})
+
+        # Monday follows Friday with no Saturday/Sunday daily bars.
+        monday = pd.Timestamp("2025-10-06")
+        row_dates = daily_dates.append(pd.DatetimeIndex([monday]))
+        row_close = np.arange(1.0, 182.0)
+        rows = pd.DataFrame({
+            "datetime": row_dates, "open": row_close - 0.2,
+            "high": row_close + 1, "low": row_close - 1,
+            "close": row_close, "volume": np.ones(len(row_close)),
+        })
+        features = add_features(rows, feature_config(), daily, daily_context_mode="completed")
+        latest = features.loc[features["datetime"] == monday]
+        self.assertEqual(len(latest), 1)
+        self.assertTrue(np.isfinite(float(latest.iloc[0]["daily_sma"])))
+        self.assertAlmostEqual(float(latest.iloc[0]["daily_sma"]), float(np.mean(daily_close[130:180])))
+
     def test_legacy_daily_context_keeps_schema_v1(self):
         dates = pd.date_range("2025-01-01", periods=180, freq="D")
         close = np.arange(1.0, 181.0)
