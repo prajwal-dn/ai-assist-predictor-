@@ -461,6 +461,10 @@ def main() -> int:
         base_cfg = load_config()
         pair = normalize_pair(args.pair or base_cfg["pair"])
         state = load_state()
+        # Persist a clean baseline before contacting the provider/model so the
+        # workflow can still record diagnostics if the first prediction fails.
+        if not STATE_PATH.exists():
+            _atomic_json(STATE_PATH, state)
         run_pair(pair, state)
     except Exception as exc:
         error_record = {
