@@ -478,9 +478,10 @@ async function loadAppConfig(pairOverride = null) {
     const res = await fetch(configUrl);
     if (!res.ok) throw new Error('Could not load application configuration.');
     const cfg = await res.json();
+    const horizonLabel = String(cfg.forecast_horizon_label || (Number(cfg.forecast_horizon || 4) + ' hours'));
 
     document.getElementById('pair-display').textContent =
-      `${cfg.pair_code} · ${String(cfg.timeframe || '').toUpperCase()} · ${cfg.forecast_horizon}H HORIZON`;
+      `${cfg.pair_code} · ${String(cfg.timeframe || '').toUpperCase()} · ${horizonLabel.toUpperCase()} HORIZON`;
     document.getElementById('model-market-label').textContent = `${cfg.pair_code} MODEL`;
     loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
 
