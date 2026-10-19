@@ -1,6 +1,7 @@
 import unittest
+from pathlib import Path
 
-from app import parse_prediction_output
+from app import parse_prediction_output, load_app_config, BASE_DIR
 
 
 class PredictionOutputParserTests(unittest.TestCase):
@@ -37,6 +38,19 @@ class PredictionOutputParserTests(unittest.TestCase):
 
     def test_probabilities_that_do_not_sum_to_one_are_rejected(self):
         self.assertTrue(parse_prediction_output(self.report("31.5", "80.0", "80.0"), 0)["error"])
+
+    def test_request_scoped_pair_does_not_mutate_config(self):
+        config_path = Path(BASE_DIR) / "config.yaml"
+        original = config_path.read_text(encoding="utf-8")
+        cfg = load_app_config("EURUSD")
+        after = config_path.read_text(encoding="utf-8")
+        self.assertEqual(cfg["pair"], "EURUSD=X")
+        self.assertEqual(cfg["confidence_threshold"], 0.55)
+        self.assertEqual(after, original)
+
+    def test_invalid_pair_is_rejected(self):
+        with self.assertRaises(ValueError):
+            load_app_config("../config")
 
 
 if __name__ == "__main__":
