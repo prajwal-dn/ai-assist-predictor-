@@ -819,6 +819,194 @@ async function initApp() {
 
 
 
+const routeDescriptions = {
+  dashboard: {eyebrow:'YOUR MARKET WORKSPACE',title:'Dashboard',description:'Your model-ready markets, recent inference results, and market context in one workspace.'},
+  markets: {eyebrow:'MODEL COVERAGE',title:'Markets',description:'Browse the markets your backend reports as trained. Choose one to open its prediction workspace.'},
+  analysis: {eyebrow:'PRICE CONTEXT',title:'Market Analysis',description:'Explore a full-width TradingView chart. Its feed provides context and is separate from the model input data.'},
+  prediction: {eyebrow:'MODEL INFERENCE',title:'Run Prediction',description:'Choose a supported market, verify readiness, and request a fresh model signal with risk levels.'},
+  history: {eyebrow:'PAST MODEL RUNS',title:'Prediction History',description:'Review predictions saved by the backend and runs recorded during this browser session.'},
+  models: {eyebrow:'ARTIFACT INVENTORY',title:'Model Information',description:'Inspect the trained-pair inventory reported by the API and the active pair configuration.'},
+  appearance: {eyebrow:'WORKSPACE SETTINGS',title:'Appearance',description:'Choose the dashboard theme. Your selection is saved in this browser.'}
+};
+const routePairMap = {
+  audusd:['AUDUSD=X','AUD/USD'],'btc-usd':['BTC-USD','BTC/USD'],'eth-usd':['ETH-USD','ETH/USD'],
+  eurgbp:['EURGBP=X','EUR/GBP'],'eurjpy':['EURJPY=X','EUR/JPY'],'eurusd':['EURUSD=X','EUR/USD'],
+  gbpjpy:['GBPJPY=X','GBP/JPY'],'gbpusd':['GBPUSD=X','GBP/USD'],'inrusd':['INRUSD=X','INR/USD'],
+  nzdusd:['NZDUSD=X','NZD/USD'],'sol-usd':['SOL-USD','SOL/USD'],'usdcad':['USDCAD=X','USD/CAD'],
+  usdchf:['USDCHF=X','USD/CHF'],'usdinr':['USDINR=X','USD/INR'],'usdjpy':['USDJPY=X','USD/JPY']
+};
+
+function navigateToView(view, shouldScroll = true) {
+  if (!Object.prototype.hasOwnProperty.call(routeDescriptions, view)) view = 'dashboard';
+  const main = document.querySelector('.main-area');
+  if (!main) return;
+  main.dataset.activeView = view;
+  const heading = document.getElementById('route-page-header');
+  const meta = routeDescriptions[view];
+  document.getElementById('route-page-eyebrow').textContent = meta.eyebrow;
+  document.getElementById('route-page-title').textContent = meta.title;
+  document.getElementById('route-page-description').textContent = meta.description;
+  heading.hidden = view === 'dashboard';
+
+  document.querySelectorAll('[data-view-target]').forEach(control => {
+    const active = control.dataset.viewTarget === view;
+    control.classList.toggle('active', active);
+    if (active) control.setAttribute('aria-current','page');
+    else control.removeAttribute('aria-current');
+  });
+  if (view === 'markets') renderMarketsPage();
+  if (view === 'models') renderModelsPage();
+  if (view === 'history') loadSavedHistory();
+  if (view === 'appearance') syncAppearanceChoices();
+  if (shouldScroll) window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function initNavigation() {
+  document.querySelectorAll('[data-view-target]').forEach(control => {
+    control.addEventListener('click', event => {
+      event.preventDefault();
+      navigateToView(control.dataset.viewTarget);
+    });
+  });
+  navigateToView('dashboard', false);
+}
+
+function makeRouteEmpty(container, message) {
+  container.replaceChildren();
+  const item = document.createElement('div');
+  item.className = 'route-empty';
+  item.textContent = message;
+  container.appendChild(item);
+}
+
+function renderMarketsPage() {
+  const grid = document.getElementById('markets-page-grid');
+  const select = document.getElementById('pair-select');
+  if (!grid) return;
+  const options = select ? [...select.options].filter(option => option.value) : [];
+  grid.replaceChildren();
+  if (!options.length) {
+    makeRouteEmpty(grid, 'No trained markets are available yet. Check the API status and model inventory.');
+    document.getElementById('markets-page-count').textContent = 'No markets';
+    return;
+  }
+  document.getElementById('markets-page-count').textContent = options.length + ' trained pairs';
+  options.forEach(option => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'market-directory-card';
+    card.addEventListener('click', () => {
+      selectMarket(option.value);
+      navigateToView('prediction');
+    });
+    const top = document.createElement('span');
+    top.className = 'market-directory-top';
+    const symbol = document.createElement('span');
+    symbol.className = 'market-directory-symbol';
+    symbol.textContent = option.textContent;
+    const type = document.createElement('span');
+    type.className = 'market-directory-type';
+    type.textContent = option.value.includes('-') ? 'Crypto' : 'Forex';
+    top.append(symbol,type);
+    const status = document.createElement('span');
+    status.className = 'market-directory-status';
+    status.textContent = '● Trained model available';
+    const cta = document.createElement('span');
+    cta.className = 'market-directory-cta';
+    cta.textContent = 'Select for prediction →';
+    card.append(top,status,cta);
+    grid.appendChild(card);
+  });
+}
+
+async function renderModelsPage() {
+  const list = document.getElementById('models-page-inventory');
+  if (!list) return;
+  list.textContent = 'Loading verified model inventory…';
+  try {
+    const [modelsResponse, configResponse] = await Promise.all([
+      fetch(window.assetPredictorApiUrl('/api/models')),
+      fetch(window.assetPredictorApiUrl('/api/config'))
+    ]);
+    if (!modelsResponse.ok) throw new Error('Model inventory endpoint returned HTTP ' + modelsResponse.status);
+    const inventory = await modelsResponse.json();
+    const trained = Array.isArray(inventory.trained_pairs) ? inventory.trained_pairs : [];
+    const unavailable = inventory.unavailable_pairs && typeof inventory.unavailable_pairs === 'object' ? inventory.unavailable_pairs : {};
+    let config = null;
+    if (configResponse.ok) config = await configResponse.json();
+    document.getElementById('models-page-count').textContent = String(trained.length);
+    document.getElementById('models-page-active').textContent = config ? String(config.pair_code || config.pair || '—').toUpperCase() : '—';
+    document.getElementById('models-page-status').textContent = config ? (config.model_exists ? 'Artifact present' : 'Unavailable') : 'API unavailable';
+    list.replaceChildren();
+    const rows = document.createElement('div');
+    rows.className = 'model-inventory-list';
+    trained.forEach(key => {
+      const display = routePairMap[key] ? routePairMap[key][1] : key.toUpperCase();
+      const row = document.createElement('div');
+      row.className = 'model-inventory-row';
+      const detail = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'model-inventory-name';
+      name.textContent = display;
+      const sub = document.createElement('div');
+      sub.className = 'model-inventory-key';
+      sub.textContent = key + ' · returned in trained_pairs';
+      detail.append(name,sub);
+      const state = document.createElement('span');
+      state.className = 'model-inventory-state';
+      state.textContent = 'Trained pair';
+      row.append(detail,state);
+      rows.appendChild(row);
+    });
+    Object.entries(unavailable).forEach(([key,reason]) => {
+      const row = document.createElement('div');
+      row.className = 'model-inventory-row';
+      const detail = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'model-inventory-name';
+      name.textContent = routePairMap[key] ? routePairMap[key][1] : key.toUpperCase();
+      const sub = document.createElement('div');
+      sub.className = 'model-inventory-key';
+      sub.textContent = String(reason || 'Not available').slice(0,180);
+      detail.append(name,sub);
+      const state = document.createElement('span');
+      state.className = 'model-inventory-state unavailable';
+      state.textContent = 'Unavailable';
+      row.append(detail,state);
+      rows.appendChild(row);
+    });
+    if (!trained.length && !Object.keys(unavailable).length) makeRouteEmpty(list,'The API returned no trained or unavailable model pairs.');
+    else list.appendChild(rows);
+  } catch(error) {
+    document.getElementById('models-page-count').textContent = '—';
+    document.getElementById('models-page-active').textContent = '—';
+    document.getElementById('models-page-status').textContent = 'API unavailable';
+    makeRouteEmpty(list, error.message || 'Could not load the model inventory. Check backend connectivity.');
+  }
+}
+
+function refreshRouteData() {
+  if (document.querySelector('.main-area').dataset.activeView === 'markets') renderMarketsPage();
+  renderModelsPage();
+}
+
+function selectAppearance(theme) {
+  applyTheme(theme);
+  syncAppearanceChoices();
+}
+
+function syncAppearanceChoices() {
+  const current = document.body.classList.contains('theme-light') ? 'light' : 'dark';
+  document.querySelectorAll('[data-theme-choice]').forEach(button => {
+    const selected = button.dataset.themeChoice === current;
+    button.classList.toggle('selected', selected);
+    const state = button.querySelector('.theme-choice-state');
+    if (state) state.textContent = selected ? 'Selected' : 'Select theme';
+    button.setAttribute('aria-pressed',String(selected));
+  });
+}
+
+initNavigation();
 initApp();
 </script>
 
