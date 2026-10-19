@@ -1,0 +1,114 @@
+name: Hourly paper trading
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+    inputs:
+      pair:
+        description: "Trained market pair to paper-trade (no broker orders)"
+        required: true
+        type: choice
+        default: SOL-USD
+        options:
+          - SOL-USD
+          - BTC-USD
+          - ETH-USD
+          - EURUSD=X
+          - GBPUSD=X
+          - USDJPY=X
+          - USDCHF=X
+          - AUDUSD=X
+          - USDCAD=X
+          - NZDUSD=X
+          - EURGBP=X
+          - EURJPY=X
+          - GBPJPY=X
+          - INRUSD=X
+          - USDINR=X
+
+permissions:
+  contents: write
+
+concurrency:
+  group: asset-predictor-paper-trading
+  cancel-in-progress: false
+
+jobs:
+  paper-trade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PAPER_PAIR: ${{ github.event.inputs.pair || vars.PAPER_TRADING_PAIR || 'SOL-USD' }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Check out code and real Git LFS model artifacts
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install model and data dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Restore the latest paper-trading state
+        run: |
+          mkdir -p paper-trading
+          git fetch origin paper-trading-log
+          for file in state.json trades.jsonl runs.jsonl events.jsonl; do
+            if git cat-file -e "origin/paper-trading-log:paper-trading/$file" 2>/dev/null; then
+              git show "origin/paper-trading-log:paper-trading/$file" > "paper-trading/$file"
+            fi
+          done
+
+      - name: Run one paper-trading cycle
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+        run: python src/paper_trade.py --pair "$PAPER_PAIR"
+
+      - name: Publish a downloadable run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-trading-${{ github.run_number }}
+          path: |
+            paper-trading/runs.jsonl
+            paper-trading/events.jsonl
+            paper-trading/trades.jsonl
+            paper-trading/state.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Persist state and logs to paper-trading-log branch
+        if: always()
+        run: |
+          test -f paper-trading/state.json || exit 0
+          git fetch origin paper-trading-log
+          git worktree add --detach /tmp/paper-trading-log origin/paper-trading-log
+          mkdir -p /tmp/paper-trading-log/paper-trading
+          cp paper-trading/state.json /tmp/paper-trading-log/paper-trading/state.json
+          for file in trades.jsonl runs.jsonl events.jsonl; do
+            if test -f "paper-trading/$file"; then
+              cp "paper-trading/$file" "/tmp/paper-trading-log/paper-trading/$file"
+            fi
+          done
+          cd /tmp/paper-trading-log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper-trading/state.json
+          for file in trades.jsonl runs.jsonl events.jsonl; do
+            if test -f "paper-trading/$file"; then git add "paper-trading/$file"; fi
+          done
+          if git diff --cached --quiet; then
+            echo "No paper-trading state changes to persist."
+            exit 0
+          fi
+          git commit -m "paper trading: run ${{ github.run_number }}"
+          git push origin HEAD:paper-trading-log

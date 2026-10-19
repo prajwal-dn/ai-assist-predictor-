@@ -55,6 +55,16 @@ risk:
 backtest:
   starting_balance: 10000
 
+# Simulation-only forward test. No broker connection or real orders.
+paper_trading:
+  enabled: true
+  starting_balance: 10000
+  # Estimated ROUND-TRIP costs in basis points of average position notional.
+  # Adjust these to your intended venue before interpreting results.
+  spread_bps: 5.0
+  commission_bps: 0.0
+  slippage_bps: 2.0
+
 # Paths (relative to project root)
 paths:
   raw_data:       "data/raw/"
