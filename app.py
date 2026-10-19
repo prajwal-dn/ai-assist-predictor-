@@ -75,11 +75,24 @@ def load_app_config(pair_override: str = None):
         raise ValueError("config.yaml must contain a YAML object.")
     if pair_override is not None:
         cfg["pair"] = normalize_pair(pair_override)
+    else:
+        cfg["pair"] = normalize_pair(cfg.get("pair", ""))
+
+    timeframe = str(cfg.get("timeframe", "")).lower()
+    if timeframe not in ("1h", "4h", "1d"):
+        raise ValueError("timeframe must be one of: 1h, 4h, 1d.")
+    horizon = cfg.get("forecast_horizon")
+    if isinstance(horizon, bool) or not isinstance(horizon, int) or horizon < 1:
+        raise ValueError("forecast_horizon must be a positive integer number of candles.")
+    try:
+        confidence_threshold = float(cfg.get("confidence_threshold"))
+    except (TypeError, ValueError):
+        raise ValueError("confidence_threshold must be a number between 0 and 1.")
+    if not math.isfinite(confidence_threshold) or not 0 < confidence_threshold < 1:
+        raise ValueError("confidence_threshold must be a number between 0 and 1.")
 
     pair = cfg["pair"]
     pair_code = pair.replace("=X", "").upper()
-    timeframe = cfg["timeframe"]
-    horizon = cfg["forecast_horizon"]
     interval_map = {"1h": "60", "4h": "240", "1d": "D"}
 
     pair_key = pair.replace("=X", "").lower()
@@ -102,6 +115,7 @@ def load_app_config(pair_override: str = None):
         "pair_code": pair_code,
         "timeframe": timeframe,
         "forecast_horizon": horizon,
+        "confidence_threshold": confidence_threshold,
         "tradingview_symbol": tradingview_symbol,
         "tradingview_interval": interval_map.get(timeframe, "60"),
         "model_exists": model_exists,
@@ -375,6 +389,12 @@ class Handler(BaseHTTPRequestHandler):
                 pair_override = qs.get("pair", [None])[0]
                 prediction = run_predict(pair_override)
                 self.send_json(prediction, 200 if not prediction.get("error") else 503)
+            except ValueError as exc:
+                self.send_json({
+                    "error": True, "signal": "UNKNOWN", "prob_up": 0,
+                    "prob_down": 0, "confidence": 0, "close": 0, "timestamp": "",
+                    "stop_loss": None, "take_profit": None, "raw": str(exc),
+                }, 400)
             except Exception as exc:
                 # Do not let prediction exceptions drop the socket and surface as
                 # a generic Railway 502. Return a diagnosable JSON response instead.
