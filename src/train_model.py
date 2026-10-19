@@ -28,14 +28,24 @@ from sklearn.metrics import (
     classification_report,
 )
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def project_path(path: str) -> str:
+    return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+
 
 # ── Columns that are NOT features ─────────────────────────────────────────────
 NON_FEATURE_COLS = ["datetime", "target", "open", "high", "low", "close", "volume", "feature_schema_version"]
 
 
-def load_config(path: str = "config.yaml") -> dict:
+def load_config(path: str = None) -> dict:
+    path = project_path(path or "config.yaml")
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config file: {path}")
+    return cfg
 
 
 def get_feature_columns(df: pd.DataFrame) -> list:
@@ -43,6 +53,7 @@ def get_feature_columns(df: pd.DataFrame) -> list:
 
 
 def load_data(label_dir: str, pair: str, timeframe: str):
+    label_dir = project_path(label_dir)
     train_file = os.path.join(label_dir, f"{pair}_{timeframe}_train.csv")
     test_file  = os.path.join(label_dir, f"{pair}_{timeframe}_test.csv")
 
@@ -169,6 +180,7 @@ def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
 
 
 def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str, metadata: dict = None):
+    model_dir = project_path(model_dir)
     os.makedirs(model_dir, exist_ok=True)
     model_path  = os.path.join(model_dir, f"{pair}_xgboost.pkl")
     scaler_path = os.path.join(model_dir, f"{pair}_scaler.pkl")
