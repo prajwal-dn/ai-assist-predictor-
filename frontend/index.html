@@ -63,32 +63,14 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
 .model-inventory-key{font-size:10px;color:var(--muted);margin-top:4px}
 .model-inventory-state{font-size:9px;font-weight:750;border-radius:999px;padding:5px 8px;white-space:nowrap;color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--surface))}
 .model-inventory-state.unavailable{color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--surface))}
-.theme-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.theme-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--text);cursor:pointer;transition:border-color .18s,transform .18s}
-.theme-choice:hover{transform:translateY(-2px);border-color:var(--borderStrong)}
-.theme-choice.selected{border-color:var(--blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--blue) 30%,transparent),0 0 22px color-mix(in srgb,var(--blue) 9%,transparent)}
-.theme-preview{display:flex;gap:5px;align-items:flex-start;width:100%;height:106px;padding:12px;border:1px solid var(--border);border-radius:9px;overflow:hidden}
-.theme-preview span{display:block;border-radius:5px}
-.theme-preview span:first-child{width:27%;height:100%}
-.theme-preview span:nth-child(2){width:39%;height:45%}
-.theme-preview span:nth-child(3){width:25%;height:65%}
-.theme-preview-dark{background:#040915}.theme-preview-dark span:first-child{background:#071b38}.theme-preview-dark span:nth-child(2){background:#12316a}.theme-preview-dark span:nth-child(3){background:linear-gradient(160deg,#168bff,#853dff)}
-.theme-preview-light{background:#f2f5fc}.theme-preview-light span:first-child{background:#e1e9f8}.theme-preview-light span:nth-child(2){background:#fff}.theme-preview-light span:nth-child(3){background:linear-gradient(160deg,#69b9ff,#b18aff)}
-.theme-choice-title{font-size:12px;font-weight:750}.theme-choice-copy{font-size:10px;line-height:1.4;color:var(--muted)}.theme-choice-state{font-size:9px;font-weight:750;color:var(--blue)}
 .bottom-link{border:0;background:transparent;cursor:pointer;font:inherit;text-align:left}
-.main-area[data-active-view="markets"] #markets-route,.main-area[data-active-view="models"] #models-route,.main-area[data-active-view="appearance"] #appearance-route{display:block}
-.main-area[data-active-view="markets"] .dashboard-grid,.main-area[data-active-view="markets"] .bottom-grid,.main-area[data-active-view="models"] .dashboard-grid,.main-area[data-active-view="appearance"] .dashboard-grid,.main-area[data-active-view="appearance"] .bottom-grid{display:none}
+.main-area[data-active-view="markets"] #markets-route,.main-area[data-active-view="models"] #models-route{display:block}
+.main-area[data-active-view="markets"] .dashboard-grid,.main-area[data-active-view="markets"] .bottom-grid,.main-area[data-active-view="models"] .dashboard-grid{display:none}
 .main-area[data-active-view="analysis"] .dashboard-grid{grid-template-columns:minmax(0,1fr)}
 .main-area[data-active-view="analysis"] .left-column{display:block}
 .main-area[data-active-view="analysis"] .left-column .hero,.main-area[data-active-view="analysis"] .right-column{display:none}
 .main-area[data-active-view="analysis"] .bottom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .main-area[data-active-view="analysis"] .bottom-grid>*:not(#analysis-insights):not(#model-info){display:none}
-.main-area[data-active-view="prediction"] .dashboard-grid{grid-template-columns:minmax(0,1fr)}
-.main-area[data-active-view="prediction"] .left-column{display:none}
-.main-area[data-active-view="prediction"] .right-column{display:block;width:100%;max-width:1100px;margin:0 auto}
-.main-area[data-active-view="prediction"] .ticker-grid{display:none}
-.main-area[data-active-view="prediction"] .analysis-stack{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
-.main-area[data-active-view="prediction"] .bottom-grid{display:none}
 .main-area[data-active-view="history"] .dashboard-grid{display:none}
 .main-area[data-active-view="history"] .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:0}
 .main-area[data-active-view="history"] .bottom-grid>*:not(#recent-predictions){display:none}
@@ -103,7 +85,7 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
 .main-area[data-active-view="models"] #model-info{display:block}
 .main-area[data-active-view="dashboard"] #route-page-header{display:none}
 .main-area[data-active-view]:not([data-active-view="dashboard"]) #route-page-header:not([hidden]){display:block}
-@media(max-width:900px){.market-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.route-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.main-area[data-active-view="prediction"] .analysis-stack{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.market-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.route-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:560px){.market-page-grid,.route-stat-grid,.theme-choice-grid{grid-template-columns:minmax(0,1fr)}.model-inventory-row{grid-template-columns:minmax(0,1fr);align-items:start}.route-panel{padding:12px}.route-page-header h1{font-size:24px}}
 
 </style>
@@ -135,10 +117,8 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
     <nav class="sidebar-nav" aria-label="Dashboard sections">
       <button type="button" class="nav-link active" data-view-target="dashboard" aria-current="page"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
       <button type="button" class="nav-link" data-view-target="analysis"><span class="nav-icon">⌁</span><span>Market Analysis</span></button>
-      <button type="button" class="nav-link" data-view-target="prediction"><span class="nav-icon">▷</span><span>Run Prediction</span></button>
       <button type="button" class="nav-link" data-view-target="history"><span class="nav-icon">◷</span><span>History</span></button>
       <button type="button" class="nav-link" data-view-target="models"><span class="nav-icon">⬡</span><span>Model Info</span></button>
-      <button type="button" class="nav-link" data-view-target="appearance"><span class="nav-icon">☼</span><span>Appearance</span></button>
     </nav>
     <section class="sidebar-card" aria-label="Supported markets">
       <div class="sidebar-card-title">Supported Markets</div>
@@ -182,22 +162,7 @@ body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .si
         <div id="models-page-inventory"><div class="route-empty">Loading backend inventory…</div></div>
       </div>
     </section>
-    <section id="appearance-route" class="route-page" aria-labelledby="appearance-route-title">
-      <div class="route-panel appearance-panel">
-        <div class="route-panel-heading"><div><h2 id="appearance-route-title">Appearance</h2><p>Choose the color theme for this dashboard. Your choice is saved in this browser.</p></div></div>
-        <div class="theme-choice-grid">
-          <button type="button" class="theme-choice selected" data-theme-choice="dark" onclick="selectAppearance('dark')">
-            <span class="theme-preview theme-preview-dark"><span></span><span></span><span></span></span>
-            <span class="theme-choice-title">Dark mode</span><span class="theme-choice-copy">Deep navy, blue and violet accents</span><span class="theme-choice-state" id="theme-dark-state">Selected</span>
-          </button>
-          <button type="button" class="theme-choice" data-theme-choice="light" onclick="selectAppearance('light')">
-            <span class="theme-preview theme-preview-light"><span></span><span></span><span></span></span>
-            <span class="theme-choice-title">Light mode</span><span class="theme-choice-copy">Bright surfaces with high-contrast text</span><span class="theme-choice-state" id="theme-light-state">Select theme</span>
-          </button>
-        </div>
-        <p class="model-note">The theme affects the dashboard, page panels, navigation, and the TradingView chart where supported.</p>
-      </div>
-    </section>
+ion>
     <div class="dashboard-grid">
       <div class="left-column">
         <section class="hero" aria-labelledby="workspace-title">
@@ -815,7 +780,6 @@ async function initApp() {
   applyTheme(theme);
   await Promise.all([loadSavedHistory(),loadHistoryStorageStatus()]);
   setAutoRefresh();
-  syncAppearanceChoices();
   const activeView = document.querySelector('.main-area')?.dataset.activeView || 'dashboard';
   if (activeView === 'markets') renderMarketsPage();
   if (activeView === 'models') renderModelsPage();
@@ -827,10 +791,8 @@ const routeDescriptions = {
   dashboard: {eyebrow:'YOUR MARKET WORKSPACE',title:'Dashboard',description:'Your model-ready markets, recent inference results, and market context in one workspace.'},
   markets: {eyebrow:'MODEL COVERAGE',title:'Markets',description:'Browse the markets your backend reports as trained. Choose one to open its prediction workspace.'},
   analysis: {eyebrow:'PRICE CONTEXT',title:'Market Analysis',description:'Explore a full-width TradingView chart. Its feed provides context and is separate from the model input data.'},
-  prediction: {eyebrow:'MODEL INFERENCE',title:'Run Prediction',description:'Choose a supported market, verify readiness, and request a fresh model signal with risk levels.'},
   history: {eyebrow:'PAST MODEL RUNS',title:'Prediction History',description:'Review predictions saved by the backend and runs recorded during this browser session.'},
-  models: {eyebrow:'ARTIFACT INVENTORY',title:'Model Information',description:'Inspect the trained-pair inventory reported by the API and the active pair configuration.'},
-  appearance: {eyebrow:'WORKSPACE SETTINGS',title:'Appearance',description:'Choose the dashboard theme. Your selection is saved in this browser.'}
+  models: {eyebrow:'ARTIFACT INVENTORY',title:'Model Information',description:'Inspect the trained-pair inventory reported by the API and the active pair configuration.'}
 };
 const routePairMap = {
   audusd:['AUDUSD=X','AUD/USD'],'btc-usd':['BTC-USD','BTC/USD'],'eth-usd':['ETH-USD','ETH/USD'],
@@ -861,7 +823,6 @@ function navigateToView(view, shouldScroll = true) {
   if (view === 'markets') renderMarketsPage();
   if (view === 'models') renderModelsPage();
   if (view === 'history') loadSavedHistory();
-  if (view === 'appearance') syncAppearanceChoices();
   if (shouldScroll) window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -901,7 +862,9 @@ function renderMarketsPage() {
     card.className = 'market-directory-card';
     card.addEventListener('click', () => {
       selectMarket(option.value);
-      navigateToView('prediction');
+      navigateToView('dashboard', false);
+      const predictionPanel = document.getElementById('run-prediction');
+      if (predictionPanel) predictionPanel.scrollIntoView({behavior:'smooth',block:'center'});
     });
     const top = document.createElement('span');
     top.className = 'market-directory-top';
@@ -994,21 +957,6 @@ function refreshRouteData() {
   renderModelsPage();
 }
 
-function selectAppearance(theme) {
-  applyTheme(theme);
-  syncAppearanceChoices();
-}
-
-function syncAppearanceChoices() {
-  const current = document.body.classList.contains('theme-light') ? 'light' : 'dark';
-  document.querySelectorAll('[data-theme-choice]').forEach(button => {
-    const selected = button.dataset.themeChoice === current;
-    button.classList.toggle('selected', selected);
-    const state = button.querySelector('.theme-choice-state');
-    if (state) state.textContent = selected ? 'Selected' : 'Select theme';
-    button.setAttribute('aria-pressed',String(selected));
-  });
-}
 
 initNavigation();
 initApp();
