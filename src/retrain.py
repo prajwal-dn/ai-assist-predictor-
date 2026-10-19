@@ -23,8 +23,14 @@ import joblib
 import subprocess
 from datetime import datetime
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def load_config(path: str = "config.yaml") -> dict:
+
+def load_config(path: str = None) -> dict:
+    if path is None:
+        path = os.path.join(BASE_DIR, "config.yaml")
+    elif not os.path.isabs(path):
+        path = os.path.join(BASE_DIR, path)
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -37,6 +43,7 @@ def run_step(script: str, step_name: str):
     result = subprocess.run(
         [sys.executable, script],
         capture_output=False,
+        cwd=BASE_DIR,
     )
     if result.returncode != 0:
         raise RuntimeError(f"Step '{step_name}' failed. Check output above.")
@@ -67,9 +74,12 @@ def check_accuracy_drop(cfg: dict, pair: str, min_accuracy: float = 0.52):
     feature_cols = joblib.load(os.path.join(model_dir, f"{pair}_feature_cols.pkl"))
 
     test_df = pd.read_csv(test_file, parse_dates=["datetime"])
-    X_test  = scaler.transform(test_df[feature_cols].values)
-    y_test  = test_df["target"].values
-    y_pred  = model.predict(X_test)
+    X_test = test_df[feature_cols].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    if not np.isfinite(X_test).all():
+        raise ValueError("Post-retrain test features contain non-finite values.")
+    X_test = scaler.transform(X_test)
+    y_test = test_df["target"].values
+    y_pred = model.predict(X_test)
     acc     = accuracy_score(y_test, y_pred)
 
     print(f"\n[INFO] Post-retrain accuracy: {acc:.3f}")
