@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from app import parse_prediction_output, load_app_config, BASE_DIR
+from app import parse_prediction_output, load_app_config, BASE_DIR, format_forecast_horizon
 
 
 class PredictionOutputParserTests(unittest.TestCase):
@@ -51,6 +51,13 @@ class PredictionOutputParserTests(unittest.TestCase):
     def test_invalid_pair_is_rejected(self):
         with self.assertRaises(ValueError):
             load_app_config("../config")
+
+    def test_forecast_horizon_respects_candle_timeframe(self):
+        self.assertEqual(format_forecast_horizon("1h", 4), "4 hours")
+        self.assertEqual(format_forecast_horizon("4h", 4), "16 hours")
+        self.assertEqual(format_forecast_horizon("1d", 4), "4 days")
+        self.assertEqual(format_forecast_horizon("1d", 1), "1 day")
+
 
 
 if __name__ == "__main__":
