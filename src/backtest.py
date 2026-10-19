@@ -66,8 +66,8 @@ def load_artifacts(cfg: dict, pair: str):
 def generate_signals(df: pd.DataFrame, model, scaler,
                      feat_cols: list, threshold: float) -> pd.DataFrame:
     """Add validated probabilities and BUY/SELL/FLAT signals to held-out data."""
-    if not 0.0 < float(threshold) < 1.0:
-        raise ValueError("confidence_threshold must be between 0 and 1.")
+    if not 0.5 < float(threshold) < 1.0:
+        raise ValueError("confidence_threshold must be greater than 0.5 and less than 1.")
     missing = [column for column in feat_cols if column not in df.columns]
     if missing:
         raise ValueError(f"Test data is missing model features: {missing}")
