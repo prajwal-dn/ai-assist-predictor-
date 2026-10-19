@@ -15,12 +15,20 @@ import os
 import yaml
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load_config(path: str = "config.yaml") -> dict:
+def project_path(path: str) -> str:
+    return path if os.path.isabs(path) else os.path.join(BASE_DIR, path)
+
+
+def load_config(path: str = None) -> dict:
+    path = project_path(path or "config.yaml")
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Invalid config file: {path}")
+    return cfg
 
 
 def add_labels(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
@@ -92,8 +100,8 @@ def main():
     pair      = cfg["pair"].replace("=X", "").lower()
     timeframe = cfg["timeframe"]
     horizon   = cfg["forecast_horizon"]
-    proc_dir  = cfg["paths"]["processed_data"]
-    label_dir = cfg["paths"]["labelled_data"]
+    proc_dir  = project_path(cfg["paths"]["processed_data"])
+    label_dir = project_path(cfg["paths"]["labelled_data"])
 
     features_file = os.path.join(proc_dir, f"{pair}_{timeframe}_features.csv")
     if not os.path.exists(features_file):
