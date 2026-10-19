@@ -56,9 +56,25 @@ def artifact_status(pair: str, model_dir: str) -> dict:
     return {"ready": True, "reason": ""}
 
 
-def load_app_config():
+def normalize_pair(pair: str) -> str:
+    """Validate and canonicalize a market symbol without changing global config."""
+    if not isinstance(pair, str):
+        raise ValueError("Market pair must be a string.")
+    value = pair.strip().upper()
+    if len(value) == 6 and "-" not in value and not value.endswith("=X"):
+        value += "=X"
+    if not re.fullmatch(r"[A-Z0-9-]{3,12}(?:=X)?", value):
+        raise ValueError("Invalid market symbol.")
+    return value
+
+
+def load_app_config(pair_override: str = None):
     with open(os.path.join(BASE_DIR, "config.yaml"), "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+    if not isinstance(cfg, dict):
+        raise ValueError("config.yaml must contain a YAML object.")
+    if pair_override is not None:
+        cfg["pair"] = normalize_pair(pair_override)
 
     pair = cfg["pair"]
     pair_code = pair.replace("=X", "").upper()
@@ -195,9 +211,9 @@ def parse_prediction_output(output: str, returncode: int = 0) -> dict:
     return data
 
 
-def run_predict():
-    """Run predict.py and return structured result."""
-    cfg = load_app_config()
+def run_predict(pair_override: str = None):
+    """Run a prediction for this request's pair without changing shared config.yaml."""
+    cfg = load_app_config(pair_override)
     cache_key = f"{cfg['pair']}|{cfg['timeframe']}|{cfg['forecast_horizon']}|{cfg.get('confidence_threshold', '')}"
     now = time.time()
 
@@ -208,6 +224,10 @@ def run_predict():
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONWARNINGS"] = "ignore"
+    if pair_override is not None:
+        env["ASSET_PREDICTOR_PAIR"] = cfg["pair"]
+    else:
+        env.pop("ASSET_PREDICTOR_PAIR", None)
     # load_app_config() intentionally returns a public/runtime view and does not
     # include the raw YAML "paths" section. Resolve artifacts from the app root
     # instead of indexing cfg["paths"] (which caused KeyError and broke /api/predict).
@@ -352,7 +372,8 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/predict":
             try:
-                prediction = run_predict()
+                pair_override = qs.get("pair", [None])[0]
+                prediction = run_predict(pair_override)
                 self.send_json(prediction, 200 if not prediction.get("error") else 503)
             except Exception as exc:
                 # Do not let prediction exceptions drop the socket and surface as
@@ -372,7 +393,11 @@ class Handler(BaseHTTPRequestHandler):
                 }, 500)
 
         elif path == "/api/config":
-            self.send_json(load_app_config())
+            pair_override = qs.get("pair", [None])[0]
+            try:
+                self.send_json(load_app_config(pair_override))
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
 
         elif path == "/api/models":
             self.send_json(load_trained_pairs())
@@ -444,11 +469,10 @@ class Handler(BaseHTTPRequestHandler):
             if not new_pair:
                 self.send_json({"error": "No pair provided"}, 400)
                 return
-            # Normalise: "EURUSD" -> "EURUSD=X", but keep "BTC-USD" or symbols that already have "=X"
-            if "-" not in new_pair and not new_pair.endswith("=X") and len(new_pair) == 6:
-                new_pair = new_pair + "=X"
-            if not re.fullmatch(r"[A-Za-z0-9-]{3,12}(?:=X)?", new_pair):
-                self.send_json({"error": "Invalid market symbol."}, 400)
+            try:
+                new_pair = normalize_pair(new_pair)
+            except ValueError as exc:
+                self.send_json({"error": str(exc)}, 400)
                 return
             pair_key = new_pair.replace("=X", "").lower()
             cfg_file = yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml"), encoding="utf-8"))
@@ -458,8 +482,9 @@ class Handler(BaseHTTPRequestHandler):
             if not status["ready"]:
                 self.send_json({"error": status["reason"], "model_exists": False}, 409)
                 return
-            save_pair_to_config(new_pair)
-            cfg = load_app_config()
+            # Legacy UI compatibility: validate and return the selected pair
+            # without mutating shared config.yaml (which races across visitors).
+            cfg = load_app_config(new_pair)
             self.send_json({"ok": True, "config": cfg})
 
         else:
