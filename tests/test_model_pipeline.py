@@ -10,6 +10,7 @@ from src.feature_engineer import add_features
 from src.labeller import add_labels, split_and_save
 from src.backtest import simulate_trades, quote_currency
 from src.predict import _drop_incomplete_candles, fetch_recent_data, load_model_artifacts
+from src.retrain import _snapshot_artifacts, _restore_artifacts
 from src.train_model import evaluate
 import src.db as db_module
 
@@ -59,6 +60,28 @@ class ModelEvaluationTests(unittest.TestCase):
             evaluate(BinaryModel(), IdentityScaler(),
                      pd.DataFrame({"feature": [1.0], "target": [0]}),
                      ["feature"], threshold=0.5)
+
+
+class RetrainingRollbackTests(unittest.TestCase):
+    def test_rejected_candidate_restores_previous_artifacts(self):
+        with tempfile.TemporaryDirectory() as model_dir:
+            pair = "eurusd"
+            model_path = Path(model_dir) / f"{pair}_xgboost.pkl"
+            scaler_path = Path(model_dir) / f"{pair}_scaler.pkl"
+            metadata_path = Path(model_dir) / f"{pair}_metadata.json"
+            model_path.write_text("old-model", encoding="utf-8")
+            scaler_path.write_text("old-scaler", encoding="utf-8")
+            backup_dir, paths, existing = _snapshot_artifacts(model_dir, pair)
+            try:
+                model_path.write_text("candidate-model", encoding="utf-8")
+                metadata_path.write_text('{"candidate": true}', encoding="utf-8")
+                _restore_artifacts(backup_dir, paths, existing)
+                self.assertEqual(model_path.read_text(encoding="utf-8"), "old-model")
+                self.assertEqual(scaler_path.read_text(encoding="utf-8"), "old-scaler")
+                self.assertFalse(metadata_path.exists())
+            finally:
+                import shutil
+                shutil.rmtree(backup_dir, ignore_errors=True)
 
 
 class HistoryPersistenceTests(unittest.TestCase):
