@@ -5,7 +5,8 @@ yfinance>=0.2.40
 pandas==2.2.2
 numpy==1.26.4
 scikit-learn==1.8.0
-xgboost==2.0.3
+# XGBoost 3.1.3 includes the official scikit-learn 1.8 compatibility fix.
+xgboost==3.1.3
 ta==0.11.0
 pyyaml==6.0.1
 joblib==1.4.2
