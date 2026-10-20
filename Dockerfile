@@ -2,7 +2,7 @@
 # The source archive supplied by deployment builders can contain LFS pointer text
 # instead of the serialized model binaries, so fetch those objects from the public
 # GitHub repository and copy only the resolved model artifacts into the final image.
-FROM python:3.10-slim AS model-assets
+FROM python:3.11-slim AS model-assets
 
 ARG MODEL_SOURCE_REF=main
 
@@ -14,7 +14,7 @@ RUN apt-get update \
     && git -C /tmp/model-source lfs pull
 
 # Runtime image: keep the deployment lean and run as an unprivileged user.
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 RUN useradd -m -u 1000 user
 USER user
