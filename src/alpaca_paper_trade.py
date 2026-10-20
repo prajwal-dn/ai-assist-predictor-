@@ -239,6 +239,10 @@ class AlpacaPaperClient:
             raise ValueError("Only buy/sell sides are allowed.")
         if (qty is None) == (notional is None):
             raise ValueError("Specify exactly one of qty or notional.")
+        if side == "buy" and notional is None:
+            raise ValueError("Buy entries must use a USD notional.")
+        if side == "sell" and qty is None:
+            raise ValueError("Sell exits must use the held crypto quantity.")
         body = {
             "symbol": broker_symbol(pair), "side": side, "type": "market",
             "time_in_force": "gtc", "client_order_id": client_id,
