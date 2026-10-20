@@ -65,7 +65,11 @@ def _is_lfs_pointer(path: str) -> bool:
 
 
 def load_model_artifacts(model_dir: str, pair: str, timeframe: str = None):
-    model_path = os.path.join(model_dir, f"{pair}_xgboost.pkl")
+    # Prefer XGBoost's stable native JSON model format. Fall back to the
+    # legacy joblib snapshot only until a saved model has been migrated.
+    native_model_path = os.path.join(model_dir, f"{pair}_xgboost.json")
+    legacy_model_path = os.path.join(model_dir, f"{pair}_xgboost.pkl")
+    model_path = native_model_path if os.path.isfile(native_model_path) else legacy_model_path
     scaler_path = os.path.join(model_dir, f"{pair}_scaler.pkl")
     cols_path = os.path.join(model_dir, f"{pair}_feature_cols.pkl")
     metadata_path = os.path.join(model_dir, f"{pair}_metadata.json")
@@ -76,7 +80,12 @@ def load_model_artifacts(model_dir: str, pair: str, timeframe: str = None):
         if _is_lfs_pointer(path):
             raise ValueError(f"{path} is a Git LFS pointer, not the model binary. Fetch the real LFS object.")
 
-    model = joblib.load(model_path)
+    if model_path == native_model_path:
+        from xgboost import XGBClassifier
+        model = XGBClassifier()
+        model.load_model(native_model_path)
+    else:
+        model = joblib.load(legacy_model_path)
     scaler = joblib.load(scaler_path)
     feature_cols = joblib.load(cols_path)
     if not isinstance(feature_cols, (list, tuple)) or not feature_cols:
