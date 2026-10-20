@@ -60,6 +60,20 @@ jobs:
       - name: Install model and data dependencies
         run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
 
+      - name: Verify real serialized models load for SOL, BTC, and ETH
+        run: |
+          python - <<'PY'
+          import numpy as np
+          from src.predict import load_model_artifacts
+          for pair in ("sol-usd", "btc-usd", "eth-usd"):
+              model, scaler, columns, metadata = load_model_artifacts("models", pair, timeframe="1h")
+              matrix = scaler.transform(np.zeros((1, len(columns)), dtype=float))
+              probabilities = np.asarray(model.predict_proba(matrix), dtype=float)
+              if probabilities.ndim != 2 or probabilities.shape[0] != 1 or not np.isfinite(probabilities).all():
+                  raise RuntimeError(f"{pair}: saved model returned invalid probabilities")
+              print(f"{pair}: artifacts loaded; features={len(columns)}; legacy={metadata.get('legacy_artifact', False)}")
+          PY
+
       - name: Restore broker paper state and logs
         run: |
           mkdir -p paper-trading
