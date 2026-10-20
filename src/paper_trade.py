@@ -279,8 +279,8 @@ def process_completed_candle(pair: str, pair_state: dict, bar: pd.Series,
     position = pair_state["position"]
     # This candle was already in progress when the sampled-price entry was
     # simulated; its earlier high/low cannot safely be used for post-entry exits.
-    entry_time = position.get("entry_time")
-    if entry_time and _timestamp(bar["datetime"]) <= _timestamp(entry_time):
+    entry_candle_start = position.get("entry_candle_start")
+    if entry_candle_start and _timestamp(bar["datetime"]) <= _timestamp(entry_candle_start):
         return []
     exit_signal = position_exit(position, bar, int(position["horizon"]))
     if exit_signal is None:
