@@ -115,6 +115,7 @@ def load_state(path: Path = STATE_PATH) -> dict:
 
 def client_order_id(pair: str, side: str, candle_time: str, reason: str) -> str:
     """Stable idempotency key for a single pair/decision/side."""
+    pair = normalize_pair(pair)
     symbol = broker_symbol(pair).replace("/", "").lower()
     digest = hashlib.sha256(f"{pair}|{side}|{candle_time}|{reason}".encode("utf-8")).hexdigest()[:20]
     return f"ap-{symbol}-{side[0]}-{digest}"[:48]
@@ -541,8 +542,7 @@ def run_once(pairs: list[str], *, execute: bool, max_notional_usd: float,
     summary = {
         "run_time_utc": utc_now(),
         "mode": "PAPER_ORDER_SUBMISSION_ENABLED" if execute else "VALIDATION_ONLY",
-        "account_status": account.get("status"), "account_equity_usd": account.get("equity"),
-        "account_cash_usd": account.get("cash"), "paper_endpoint": ALPACA_PAPER_BASE_URL,
+        "account_status": account.get("status"), "paper_endpoint": ALPACA_PAPER_BASE_URL,
         "pairs": results, "simulation_only": True,
     }
     _append_jsonl(RUNS_PATH, summary)
