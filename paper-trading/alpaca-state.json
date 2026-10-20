@@ -1,1 +1,21 @@
-{"schema_version":1,"updated_at_utc":null,"pairs":{}}
+{
+  "pairs": {
+    "BTC-USD": {
+      "last_processed_candle": null,
+      "pending_order": null,
+      "position": null
+    },
+    "ETH-USD": {
+      "last_processed_candle": null,
+      "pending_order": null,
+      "position": null
+    },
+    "SOL-USD": {
+      "last_processed_candle": null,
+      "pending_order": null,
+      "position": null
+    }
+  },
+  "schema_version": 1,
+  "updated_at_utc": "2026-10-20T18:28:03+00:00"
+}
