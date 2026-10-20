@@ -3,8 +3,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import joblib
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
 
 from src.feature_engineer import add_features
 from src.labeller import add_labels, split_and_save
@@ -22,6 +25,40 @@ def feature_config():
         "daily_context_mode": "completed",
     }}
 
+
+
+class XGBoostSerializationTests(unittest.TestCase):
+    def test_native_json_model_is_preferred_over_legacy_pickle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model_dir = Path(directory)
+            rng = np.random.default_rng(7)
+            X = rng.normal(size=(48, 3))
+            y = ((X[:, 0] + 0.7 * X[:, 1] - 0.2 * X[:, 2]) > 0).astype(int)
+            columns = ["f0", "f1", "f2"]
+            scaler = StandardScaler().fit(X)
+            scaled = scaler.transform(X)
+            model = XGBClassifier(
+                n_estimators=8, max_depth=2, learning_rate=0.1,
+                eval_metric="logloss", n_jobs=1, random_state=7,
+            )
+            model.fit(scaled, y)
+            model.save_model(str(model_dir / "eurusd_xgboost.json"))
+            joblib.dump(scaler, model_dir / "eurusd_scaler.pkl")
+            joblib.dump(columns, model_dir / "eurusd_feature_cols.pkl")
+            # A legacy pointer must not be opened when a native model is present.
+            (model_dir / "eurusd_xgboost.pkl").write_text(
+                "version https://git-lfs.github.com/spec/v1\\noid sha256:deadbeef\\nsize 12\\n",
+                encoding="utf-8",
+            )
+
+            loaded, loaded_scaler, loaded_columns, metadata = load_model_artifacts(
+                str(model_dir), "eurusd", timeframe="1h"
+            )
+            self.assertEqual(loaded_columns, columns)
+            self.assertTrue(metadata["legacy_artifact"])
+            expected = model.predict_proba(scaled)
+            actual = loaded.predict_proba(loaded_scaler.transform(X))
+            np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-6)
 
 
 class ModelEvaluationTests(unittest.TestCase):
