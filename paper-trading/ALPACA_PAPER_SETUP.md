@@ -17,9 +17,9 @@ Alpaca availability and supported tradable symbols can vary by account eligibili
 
 ## 2. One-time XGBoost serialization migration
 
-Before validating crypto models for paper trading, open **Actions → Migrate XGBoost models to native JSON → Run workflow** on branch `main), and choose `ALL_CRYPTO`.
+Before validating crypto models for paper trading, open **Actions → Migrate XGBoost models to native JSON → Run workflow** on branch `main`, and choose `ALL_CRYPTO`.
 
-The workflow loads the existing SOL/BTC/ETH pickle snapshots, writes native JSON models, reloads each JSON file, and compares class labels plus probabilities on a deterministic 19-row probe. It commits the new JSON artifacts to `main) only if the comparisons pass within a maximum absolute probability difference of 1e-6. The old pickle files are kept as rollback/fallback artifacts. This migration does not retrain models and does not submit orders.
+The workflow loads the existing SOL/BTC/ETH pickle snapshots, writes native JSON models, reloads each JSON file, and compares class labels plus probabilities on a deterministic 19-row probe. It commits the new JSON artifacts to `main` only if the comparisons pass within a maximum absolute probability difference of 1e-6. The old pickle files are kept as rollback/fallback artifacts. This migration does not retrain models and does not submit orders.
 
 The one-time conversion may still report that the legacy pickle emitted a warning when loaded; the key acceptance check is that the freshly loaded native JSON artifacts pass without the legacy-snapshot warning in the subsequent validation run. If the conversion fails or predictions differ, it stops without committing the converted files.
 
