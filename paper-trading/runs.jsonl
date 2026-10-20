@@ -1,0 +1,1 @@
+{"error": "Latest usable feature row is older than the latest market candle. Refusing to generate a stale paper-trading signal.", "error_type": "ValueError", "pair": "SOL-USD", "run_time_utc": "2026-10-20T14:15:58+00:00", "simulation_only": true, "status": "ERROR"}
