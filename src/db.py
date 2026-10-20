@@ -10,7 +10,9 @@ which is automatically synced to a Hugging Face Dataset repository.
 import os
 import yaml
 import json
-from datetime import datetime
+import threading
+import tempfile
+from datetime import datetime, timezone
 
 try:
     from huggingface_hub import HfApi, hf_hub_download
@@ -19,6 +21,7 @@ except ImportError:
     _hf_available = False
 
 _cache = None
+_cache_lock = threading.RLock()
 
 
 def _load_app_config() -> dict:
@@ -46,69 +49,102 @@ def _get_local_path():
 
 
 def _load_data():
+    """Load history safely; never silently overwrite a corrupted file."""
     global _cache
-    if _cache is not None:
-        return _cache
+    with _cache_lock:
+        if _cache is not None:
+            return _cache
 
-    repo_id = _get_repo_id()
-    api = _get_api()
-    local_path = _get_local_path()
-    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        repo_id = _get_repo_id()
+        api = _get_api()
+        local_path = _get_local_path()
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
-    if api and repo_id:
-        try:
-            print(f"[DB] Attempting to fetch history from dataset: {repo_id}")
-            hf_hub_download(
-                repo_id=repo_id, 
-                filename="history.json", 
-                repo_type="dataset", 
-                local_dir=os.path.dirname(local_path), 
-                token=api.token
-            )
-        except Exception as e:
-            print(f"[DB] Could not fetch from HF hub (might not exist yet): {e}")
+        if api and repo_id:
+            try:
+                print(f"[DB] Attempting to fetch history from dataset: {repo_id}")
+                hf_hub_download(
+                    repo_id=repo_id,
+                    filename="history.json",
+                    repo_type="dataset",
+                    local_dir=os.path.dirname(local_path),
+                    token=api.token,
+                )
+            except Exception as exc:
+                # Remote sync is optional; local data remains authoritative and usable.
+                print(f"[DB] Could not fetch from HF hub (might not exist yet): {type(exc).__name__}")
 
-    if os.path.exists(local_path):
+        if not os.path.exists(local_path):
+            _cache = []
+            return _cache
+
         try:
             with open(local_path, "r", encoding="utf-8") as f:
-                _cache = json.load(f)
-        except Exception:
+                loaded = json.load(f)
+            if not isinstance(loaded, list) or any(not isinstance(row, dict) for row in loaded):
+                raise ValueError("History must be a JSON list of objects.")
+            _cache = loaded
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            # Preserve the bad file for diagnosis/recovery instead of silently
+            # treating corruption as valid empty history.
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            backup = f"{local_path}.corrupt-{stamp}"
+            try:
+                os.replace(local_path, backup)
+                print(f"[DB ERROR] Invalid history moved to {backup}: {type(exc).__name__}")
+            except OSError as move_exc:
+                raise RuntimeError(
+                    f"History file is invalid and could not be preserved: {local_path}"
+                ) from move_exc
             _cache = []
-    else:
-        _cache = []
-
-    return _cache
+        return _cache
 
 
 def _save_data():
+    """Persist local history atomically, then best-effort sync it to the HF Dataset."""
     global _cache
-    data = _cache if _cache is not None else []
-    local_path = _get_local_path()
-
-    with open(local_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-
-    repo_id = _get_repo_id()
-    api = _get_api()
-    if api and repo_id:
+    with _cache_lock:
+        data = _cache if _cache is not None else []
+        local_path = _get_local_path()
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        temp_path = None
         try:
-            # Create dataset if it doesn't exist
-            try:
-                api.dataset_info(repo_id)
-            except Exception:
-                print(f"[DB] Creating new dataset repo: {repo_id}")
-                api.create_repo(repo_id, repo_type="dataset", private=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=os.path.dirname(local_path),
+                prefix=".history-", suffix=".tmp", delete=False
+            ) as f:
+                temp_path = f.name
+                json.dump(data, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_path, local_path)
+            temp_path = None
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
 
-            print(f"[DB] Pushing updated history to dataset: {repo_id}")
-            api.upload_file(
-                path_or_fileobj=local_path,
-                path_in_repo="history.json",
-                repo_id=repo_id,
-                repo_type="dataset",
-                commit_message=f"Update prediction history ({len(data)} runs)"
-            )
-        except Exception as e:
-            print(f"[DB WARNING] Failed to upload to HF dataset: {e}")
+        # Local persistence is authoritative. A config/token/network error in
+        # optional cloud sync must not turn a successful local write into a
+        # reported failure that could roll back the in-memory history entry.
+        try:
+            repo_id = _get_repo_id()
+            api = _get_api()
+            if api and repo_id:
+                try:
+                    api.dataset_info(repo_id)
+                except Exception:
+                    print(f"[DB] Creating new dataset repo: {repo_id}")
+                    api.create_repo(repo_id, repo_type="dataset", private=True, exist_ok=True)
+                print(f"[DB] Pushing updated history to dataset: {repo_id}")
+                api.upload_file(
+                    path_or_fileobj=local_path,
+                    path_in_repo="history.json",
+                    repo_id=repo_id,
+                    repo_type="dataset",
+                    commit_message=f"Update prediction history ({len(data)} runs)",
+                )
+        except Exception as exc:
+            print(f"[DB WARNING] Cloud history sync failed: {type(exc).__name__}")
 
 
 def test_connection() -> bool:
@@ -125,35 +161,43 @@ def test_connection() -> bool:
 
 
 def save_prediction_run(prediction: dict, pair: str, timeframe: str, horizon: int) -> int:
-    """
-    Save a prediction run to the local JSON and push to HF Dataset if available.
-    Returns the auto-generated run ID.
-    """
-    data_list = _load_data()
-    
-    # Generate auto-increment ID
-    new_id = 1 if len(data_list) == 0 else data_list[-1].get("id", 0) + 1
-    
-    new_run = {
-        "id": new_id,
-        "run_timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "pair": pair,
-        "timeframe": timeframe,
-        "forecast_horizon": horizon,
-        "trade_signal": prediction.get("signal", "UNKNOWN"),
-        "confidence": round(prediction.get("confidence", 0), 2),
-        "prob_up": round(prediction.get("prob_up", 0), 2),
-        "prob_down": round(prediction.get("prob_down", 0), 2),
-        "close_price": round(prediction.get("close", 0), 5) if prediction.get("close") else 0,
-        "stop_loss": round(prediction.get("stop_loss", 0), 5) if prediction.get("stop_loss") else None,
-        "take_profit": round(prediction.get("take_profit", 0), 5) if prediction.get("take_profit") else None,
-        "candle_timestamp": str(prediction.get("timestamp", "")),
-        "is_error": 1 if prediction.get("error", False) else 0,
-    }
-    
-    data_list.append(new_run)
-    _save_data()
-    return new_id
+    """Save a validated prediction run and return its unique local ID."""
+    global _cache
+    with _cache_lock:
+        data_list = _load_data()
+        numeric_ids = []
+        for row in data_list:
+            try:
+                numeric_ids.append(int(row.get("id", 0)))
+            except (TypeError, ValueError):
+                continue
+        new_id = max(numeric_ids, default=0) + 1
+
+        new_run = {
+            "id": new_id,
+            "run_timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            "pair": pair,
+            "timeframe": timeframe,
+            "forecast_horizon": horizon,
+            "trade_signal": prediction.get("signal", "UNKNOWN"),
+            "confidence": round(float(prediction.get("confidence", 0)), 2),
+            "prob_up": round(float(prediction.get("prob_up", 0)), 2),
+            "prob_down": round(float(prediction.get("prob_down", 0)), 2),
+            "close_price": round(float(prediction.get("close", 0)), 5) if prediction.get("close") else 0,
+            "stop_loss": round(float(prediction.get("stop_loss", 0)), 5) if prediction.get("stop_loss") else None,
+            "take_profit": round(float(prediction.get("take_profit", 0)), 5) if prediction.get("take_profit") else None,
+            "candle_timestamp": str(prediction.get("timestamp", "")),
+            "is_error": 1 if prediction.get("error", False) else 0,
+        }
+        data_list.append(new_run)
+        try:
+            _save_data()
+        except Exception:
+            # Do not leave an unsaved row in the process cache after a local
+            # persistence failure; the next call must not create a ghost run.
+            data_list.pop()
+            raise
+        return new_id
 
 
 def get_recent_runs(limit: int = 50, pair_filter: str = None) -> list:

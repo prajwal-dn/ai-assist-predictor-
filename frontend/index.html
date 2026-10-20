@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asset Predictor PRO | AI Trading Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#040915;--sidebar:#071224;--surface:#08172c;--surface2:#0d1c35;--surface3:#132645;--border:rgba(94,143,235,.19);--borderStrong:rgba(73,126,255,.44);--text:#f2f6ff;--muted:#9bb1d8;--muted2:#7188b2;--blue:#3b82ff;--violet:#8d57ff;--cyan:#20c9ff;--green:#17d6a0;--red:#ff4e78;--amber:#ffbf4f;--shadow:0 15px 42px rgba(0,0,0,.17)}
+body.theme-light{color-scheme:light;--bg:#f2f5fc;--sidebar:#eaf0fb;--surface:#fff;--surface2:#f6f9ff;--surface3:#eaf1ff;--border:rgba(45,75,135,.15);--borderStrong:rgba(45,102,236,.34);--text:#0b1835;--muted:#596e94;--muted2:#7e8dad;--blue:#286cf0;--violet:#794ee8;--cyan:#008fbf;--green:#078e6c;--red:#dc315a;--amber:#a76b08;--shadow:0 15px 42px rgba(35,64,115,.07)}
+*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth;scroll-padding-top:18px}body{min-height:100vh;background:var(--bg);color:var(--text);font:14px/1.48 Inter,sans-serif;background-image:radial-gradient(ellipse at 76% -9%,rgba(39,99,255,.09),transparent 33%),radial-gradient(ellipse at 0% 85%,rgba(124,72,255,.045),transparent 30%);transition:background-color .25s,color .25s}button,select,a{font:inherit}button,select{color:inherit}a{color:inherit;text-decoration:none}button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.global-topbar{height:72px;padding:0 18px;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--bg) 92%,transparent);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;flex:0 0 300px;min-width:0}.brand-mark{width:39px;height:39px;flex:0 0 39px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(140deg,#1fddff,#6376ff 52%,#a64cff);box-shadow:0 0 22px rgba(75,105,255,.25);color:#fff}.brand > span:last-child{display:block;min-width:0}.brand-name{display:block;font-size:15px;line-height:1.15;font-weight:850;letter-spacing:-.5px;white-space:nowrap}.brand-name span{color:#7188ff}.brand-tagline{display:block;color:var(--muted2);font-size:8px;line-height:1.2;letter-spacing:1.2px;text-transform:uppercase;margin-top:5px;white-space:nowrap}
+.top-nav{display:flex;align-items:center;gap:6px;min-width:0;flex:1}.top-nav a{padding:10px 13px;border-radius:11px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;border:1px solid transparent;transition:.2s}.top-nav a:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}.top-nav a.active{background:linear-gradient(110deg,rgba(56,95,255,.25),rgba(131,72,242,.15));border-color:rgba(112,91,255,.4);color:var(--text)}
+.top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}.ghost-button,.models-pill,.theme-toggle,.pair-pill{min-height:37px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 11px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.2s}.ghost-button:hover,.models-pill:hover,.theme-toggle:hover{color:var(--text);border-color:var(--borderStrong);transform:translateY(-1px)}.pair-pill{background:var(--surface2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:9px}.models-pill{color:var(--text);background:var(--surface2)}.live-dot{width:8px;height:8px;border-radius:99px;background:var(--green);box-shadow:0 0 12px color-mix(in srgb,var(--green) 58%,transparent)}
+.status-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.25px;color:var(--cyan);border:1px solid rgba(36,200,255,.24);background:rgba(36,200,255,.075);white-space:nowrap}.status-pill.ready{color:var(--green);background:rgba(25,214,161,.08);border-color:rgba(25,214,161,.25)}.status-pill.offline{color:var(--red);background:rgba(255,79,120,.08);border-color:rgba(255,79,120,.24)}.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 9px currentColor}
+.app-shell{display:grid;grid-template-columns:216px minmax(0,1fr);min-height:calc(100vh - 72px);max-width:1920px;margin:0 auto}.sidebar{border-right:1px solid var(--border);background:linear-gradient(180deg,var(--sidebar),color-mix(in srgb,var(--sidebar) 90%,transparent));padding:20px 11px 14px;display:flex;flex-direction:column;gap:20px;min-width:0;position:sticky;top:0;height:calc(100vh - 72px);overflow:auto}.sidebar-nav{display:flex;flex-direction:column;gap:5px}.nav-link{border:1px solid transparent;display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:11px;font-size:11px;font-weight:600;color:var(--muted);min-height:40px;background:transparent;text-align:left;width:100%;cursor:pointer;transition:background .2s,border-color .2s,color .2s}.nav-icon{width:20px;flex:0 0 20px;display:inline-grid;place-items:center;font-size:16px}.nav-link:hover{color:var(--text);background:var(--surface2);border-color:var(--border)}.nav-link.active{color:var(--text);border-color:rgba(112,91,255,.48);background:linear-gradient(110deg,rgba(58,95,255,.24),rgba(131,72,242,.11));box-shadow:inset 0 0 18px rgba(70,96,255,.07)}.nav-link.active .nav-icon{color:#a79bff}
+.sidebar-card{border:1px solid var(--border);border-radius:15px;padding:13px 10px;background:linear-gradient(155deg,var(--surface2),var(--surface))}.sidebar-card-title{font-size:10px;font-weight:750;margin-bottom:10px}.coverage-total{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);margin-bottom:10px}.coverage-list{display:grid;gap:6px}.coverage-item{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:9px;background:color-mix(in srgb,var(--surface3) 65%,transparent)}.coverage-icon{display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:linear-gradient(145deg,rgba(58,129,255,.2),rgba(132,78,255,.19));color:#a5b4fc;font-size:14px;flex:0 0 29px}.coverage-item strong{display:block;font-size:10px;font-weight:650}.coverage-item small{display:block;color:var(--muted2);font-size:9px;margin-top:1px}.sidebar-quote{margin-top:auto;overflow:hidden;border-radius:14px;min-height:120px;padding:13px;display:flex;align-items:flex-end;position:relative;isolation:isolate;background:radial-gradient(ellipse at 15% 20%,rgba(25,180,255,.26),transparent 36%),radial-gradient(ellipse at 95% 0%,rgba(132,65,255,.3),transparent 45%),linear-gradient(155deg,#0e2850,#060d1f);border:1px solid var(--border)}.sidebar-quote:before{content:"";position:absolute;inset:48% -10% -20%;z-index:-1;background:linear-gradient(145deg,transparent 37%,rgba(74,163,255,.3) 38% 39%,transparent 40%),linear-gradient(165deg,transparent 45%,rgba(105,96,255,.45) 46% 47%,transparent 48%)}.sidebar-quote p{font-size:11px;line-height:1.6;font-weight:600;color:#e9f1ff;max-width:150px}
+.main-area{min-width:0;padding:13px clamp(12px,1.3vw,20px) 22px}.readiness-notice,.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.dashboard-grid{display:grid;grid-template-columns:minmax(0,1.68fr) minmax(340px,.96fr);gap:13px;align-items:start}.left-column,.right-column{display:flex;flex-direction:column;gap:13px;min-width:0}
+.hero{min-height:248px;position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;padding:25px clamp(20px,2.2vw,32px);border:1px solid var(--borderStrong);border-radius:19px;background:linear-gradient(110deg,color-mix(in srgb,var(--surface) 96%,#0d317c),var(--surface) 55%,color-mix(in srgb,var(--surface) 80%,#24105f));box-shadow:var(--shadow)}.hero:before{content:"";position:absolute;z-index:-1;width:min(58%,430px);height:100%;right:-1.5%;top:50%;transform:translateY(-50%);background-image:var(--globe-art, url('/assets/earth-network.webp'));background-size:contain;background-repeat:no-repeat;background-position:center;filter:drop-shadow(0 0 24px rgba(38,117,255,.23));opacity:.98;pointer-events:none}.hero:after{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 77% 30%,rgba(147,70,255,.2),transparent 33%);pointer-events:none}.hero-copy{position:relative;z-index:1;max-width:57%;padding-right:10px}.eyebrow{display:flex;align-items:center;gap:8px;color:#66a6ff;font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}.hero h2{font-size:clamp(27px,2.8vw,40px);line-height:1.07;letter-spacing:-1.4px;font-weight:850;max-width:600px}.hero h2 span{background:linear-gradient(90deg,#55c6ff,#8a78ff 55%,#c05dff);background-clip:text;-webkit-background-clip:text;color:transparent}.hero-copy>p{margin-top:12px;color:var(--muted);font-size:11px;max-width:490px;line-height:1.75}.hero-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}.hero-tag{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:999px;padding:7px 9px;color:var(--muted);background:rgba(8,22,47,.38);font-size:9px}.hero-tag strong{color:var(--text);font-weight:750}.hero-tag .tag-icon{color:#a98aff;font-size:12px}
+.ticker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.ticker-card{min-width:0;border:1px solid var(--border);border-radius:12px;padding:11px 7px;background:linear-gradient(145deg,var(--surface2),var(--surface));text-align:left;cursor:pointer;transition:.2s}.ticker-card:hover,.ticker-card[aria-pressed=true]{border-color:var(--borderStrong);background:linear-gradient(145deg,var(--surface3),var(--surface));transform:translateY(-1px)}.ticker-card:disabled{opacity:.48;cursor:not-allowed}.ticker-card:disabled:hover{transform:none}.ticker-symbol{display:block;font-size:clamp(8px,.68vw,10px);font-weight:800;white-space:nowrap}.ticker-type{display:block;color:var(--muted2);font-size:8px;margin-top:5px;white-space:nowrap}.ticker-ready{display:flex;align-items:center;gap:4px;color:var(--green);font-size:8px;font-weight:700;margin-top:8px}.ticker-ready .live-dot{width:5px;height:5px}
+.panel{min-width:0;border:1px solid var(--border);border-radius:16px;background:linear-gradient(145deg,var(--surface),color-mix(in srgb,var(--surface) 88%,var(--blue)));box-shadow:var(--shadow);overflow:hidden}.panel-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid var(--border)}.panel-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800}.panel-symbol{color:#b58aff;font-size:15px}.panel-caption{color:var(--muted2);font-size:8px;text-align:right}.chart-toolbar{min-height:39px;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:6px 12px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--surface2) 78%,transparent)}.chart-mode-tabs,.chart-timeframes{display:flex;align-items:center;gap:5px;min-width:0}.chart-mode,.chart-timeframe{border:1px solid transparent;border-radius:999px;background:transparent;color:var(--muted);padding:6px 10px;font-size:9px;white-space:nowrap;cursor:pointer;transition:.18s}.chart-mode:hover,.chart-timeframe:hover{color:var(--text);border-color:var(--border)}.chart-mode.active,.chart-timeframe.active{color:var(--text);background:linear-gradient(100deg,rgba(59,130,255,.25),rgba(141,87,255,.19));border-color:var(--borderStrong);box-shadow:0 0 14px rgba(59,130,255,.10)}.chart-timeframes{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2px}.chart-timeframe{padding:5px 8px;border-radius:7px}.chart-wrap{height:clamp(300px,23vw,355px);min-height:290px}#tv-chart{display:block;width:100%;height:100%;border:0;background:var(--surface)}
+.analysis-stack{min-width:0;display:flex;flex-direction:column;gap:12px}.run-body{padding:14px}.field-label{display:block;color:var(--muted);font-size:9px;font-weight:700;margin:0 0 6px}.form-control{width:100%;min-height:38px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;outline:none;background:var(--surface2);color:var(--text);font-size:10px}.form-control:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(57,136,255,.12)}.select-field{margin-bottom:10px}.control-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.primary-button{width:100%;min-height:42px;border:0;border-radius:10px;background:linear-gradient(100deg,#25bbff,#6577ff 47%,#dd4dca);color:#071027;font-weight:850;font-size:10px;cursor:pointer;box-shadow:0 8px 24px rgba(73,107,255,.18);transition:transform .2s,filter .2s}.primary-button:hover{transform:translateY(-1px);filter:brightness(1.08)}.primary-button:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(7,16,39,.25);border-top-color:#071027;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}@keyframes spin{to{transform:rotate(360deg)}}.run-options{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:9px}.run-options .form-control{min-height:31px;font-size:9px;width:auto;max-width:155px;padding:6px 8px}.prediction-live{font-size:8px;color:var(--green);border:1px solid rgba(25,214,161,.2);background:rgba(25,214,161,.07);border-radius:999px;padding:4px 7px;white-space:nowrap}
+.prediction-body{padding:13px 14px 0}.signal-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:4px 0 10px}.signal-value{font-size:clamp(31px,2.5vw,43px);font-weight:900;letter-spacing:-1.6px;line-height:1.1;margin-bottom:5px}.signal-value.BUY{color:var(--green);text-shadow:0 0 22px rgba(25,214,161,.12)}.signal-value.SELL{color:var(--red);text-shadow:0 0 22px rgba(255,79,120,.12)}.signal-value.FLAT{color:var(--amber)}.signal-value.UNKNOWN{color:var(--muted2)}.signal-caption{color:var(--muted);font-size:9px;line-height:1.5;max-width:220px}.confidence-ring{--ring-angle:0deg;width:76px;height:76px;border-radius:50%;padding:5px;display:grid;place-items:center;flex:0 0 76px;background:conic-gradient(from -90deg,var(--violet),var(--cyan) var(--ring-angle),var(--surface3) var(--ring-angle) 360deg)}.confidence-ring-inner{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:var(--surface);border:1px solid var(--border)}.confidence-ring-inner strong{font-size:15px;line-height:1;font-weight:850}.confidence-ring-inner small{font-size:7px;color:var(--muted2);margin-top:4px}.confidence-gauge{height:4px;overflow:hidden;border-radius:99px;background:var(--surface3);margin:3px 0 11px}.conf-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--red));border-radius:99px;transition:width .8s ease}.prob-list{display:grid;gap:9px;margin:4px 0 13px}.prob-item{display:grid;grid-template-columns:49px minmax(40px,1fr) 38px;align-items:center;gap:7px;font-size:8px}.prob-item label{color:var(--muted)}.prob-bar{height:6px;border-radius:99px;background:var(--surface3);overflow:hidden}.prob-bar span{display:block;height:100%;width:0;border-radius:99px;transition:width .7s ease}#prob-up-bar{background:linear-gradient(90deg,#0abf8a,#39e3b2)}#prob-down-bar{background:linear-gradient(90deg,#f63d68,#ff7594)}.prob-item strong{font:8px 'JetBrains Mono',monospace;text-align:right}.result-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0 -14px;border-top:1px solid var(--border)}.result-metric{min-width:0;padding:10px 6px;text-align:center;border-right:1px solid var(--border)}.result-metric:last-child{border-right:0}.result-metric span{display:block;font-size:7px;color:var(--muted2);margin-bottom:4px}.result-metric strong{display:block;font:11px 'JetBrains Mono',monospace;overflow-wrap:anywhere}.result-metric .loss{color:var(--red)}.result-metric .profit{color:var(--green)}.result-footer{border-top:1px solid var(--border);padding:8px 14px;display:flex;justify-content:space-between;gap:8px;color:var(--muted2);font-size:8px}
+.bottom-grid{display:grid;grid-template-columns:1.02fr 1fr .92fr 1fr;gap:11px;margin-top:13px}.info-panel{min-width:0;padding:13px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,var(--surface),var(--surface2));box-shadow:var(--shadow)}.info-title{display:flex;align-items:center;gap:7px;font-weight:800;font-size:10px;margin-bottom:10px}.info-title .panel-symbol{font-size:14px}.insight-list{display:grid;gap:6px}.insight-item{display:flex;align-items:flex-start;gap:7px;padding:7px;border-radius:9px;background:var(--surface2);color:var(--muted);font-size:9px;line-height:1.5}.insight-item .insight-dot{display:inline-grid;place-items:center;flex:0 0 17px;height:17px;border-radius:6px;background:rgba(137,94,255,.15);color:#bba2ff;font-size:9px}.model-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.model-info-item{border:1px solid var(--border);border-radius:9px;padding:8px;background:var(--surface2)}.model-info-item span{display:block;color:var(--muted2);font-size:8px}.model-info-item strong{display:block;margin-top:4px;font-size:11px;overflow-wrap:anywhere}.model-info-item small{display:block;font-size:8px;color:var(--muted);margin-top:2px}.model-note{color:var(--muted2);font-size:8px;line-height:1.55;margin-top:9px}.history-list{display:grid;gap:0}.history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:9px}.history-item:last-child{border-bottom:0}.history-market{color:var(--text);font-weight:750;font-size:9px}.history-meta{color:var(--muted2);font-size:8px;margin-top:2px}.history-result{text-align:right}.h-sig{display:inline-block;font-size:8px;font-weight:850;letter-spacing:.3px;border-radius:5px;padding:3px 5px;background:var(--surface3);color:var(--muted)}.h-sig.BUY{color:var(--green);background:rgba(25,214,161,.1)}.h-sig.SELL{color:var(--red);background:rgba(255,79,120,.1)}.h-sig.FLAT{color:var(--amber);background:rgba(255,189,74,.1)}.h-time{color:var(--muted2);font-size:8px;margin-top:3px}.empty-history{color:var(--muted2);font-size:9px;line-height:1.6;padding:15px 0;text-align:center}.bottom-link{display:inline-flex;gap:5px;align-items:center;color:var(--cyan);font-weight:650;font-size:8px;margin-top:8px}.footer-note{display:flex;justify-content:space-between;gap:10px;margin-top:15px;padding:10px 2px;color:var(--muted2);font-size:8px}.footer-note a{color:var(--muted);text-decoration:underline;text-decoration-color:var(--borderStrong)}
+#error-box{position:fixed;top:86px;right:18px;z-index:9999;max-width:min(430px,calc(100vw - 36px));padding:13px 16px;border-radius:12px;background:var(--surface);border:1px solid rgba(255,79,120,.32);border-left:4px solid var(--red);color:var(--text);font-size:11px;box-shadow:var(--shadow);opacity:0;transform:translateY(-8px);pointer-events:none;transition:.2s;overflow-wrap:anywhere}#error-box.show{opacity:1;transform:translateY(0);pointer-events:auto}
+body.theme-light .hero-tag{background:rgba(255,255,255,.67)}body.theme-light .sidebar-quote{background:linear-gradient(150deg,#dfeaff,#f5f8ff)}body.theme-light .sidebar-quote p{color:#1b2a4b}body.theme-light .hero:before{opacity:.78;filter:drop-shadow(0 0 12px rgba(38,117,255,.12))}body.theme-light .hero:after{opacity:.48}body.theme-light .form-control{background:#fbfcff}body.theme-light .panel,body.theme-light .info-panel,body.theme-light .ticker-card{box-shadow:0 12px 35px rgba(32,58,105,.045)}
+@media(max-width:1440px){.global-topbar{gap:15px;padding-inline:15px}.brand{flex-basis:265px}.top-nav a{padding:9px 9px}.top-actions .status-pill{display:none}.app-shell{grid-template-columns:196px minmax(0,1fr)}.dashboard-grid{grid-template-columns:minmax(0,1.48fr) minmax(315px,.98fr)}.bottom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1060px){.global-topbar{height:auto;min-height:70px;flex-wrap:wrap;padding:12px 15px;gap:11px}.brand{flex:1 1 240px}.top-nav{order:3;flex:1 1 100%;overflow-x:auto}.top-actions{margin-left:auto}.app-shell{grid-template-columns:1fr;min-height:auto}.sidebar{position:relative;top:auto;height:auto;overflow:visible;padding:11px 14px;border-right:0;border-bottom:1px solid var(--border);gap:11px}.sidebar-nav{flex-direction:row;gap:5px;overflow-x:auto;padding-bottom:2px}.nav-link{width:auto;flex:0 0 auto;min-height:36px;padding:7px 10px}.nav-link:hover{transform:none}.sidebar-card,.sidebar-brand-card,.sidebar-quote{display:none}.main-area{padding:12px}.dashboard-grid{grid-template-columns:minmax(0,1fr)}.left-column{display:grid;grid-template-columns:minmax(0,1fr)}.hero{min-height:220px}.right-column{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.ticker-grid{grid-column:1/-1}.analysis-stack{display:contents}.analysis-stack>.panel{min-width:0}.chart-wrap{height:365px;min-height:325px}}
+@media(max-width:660px){.hero-copy{max-width:100%;padding-right:0}.hero:before{width:78%;right:-26%;opacity:.35}.global-topbar{padding:10px}.brand{flex-basis:100%}.top-actions{width:100%;justify-content:flex-start;margin-left:0;flex-wrap:wrap}.top-actions .pair-pill{display:none}.top-nav{gap:3px}.top-nav a{font-size:10px;padding:8px 9px}.sidebar{padding:9px}.main-area{padding:10px}.hero{min-height:unset;padding:22px 17px}.hero:before{right:-150px;opacity:.45}.hero h2{font-size:29px;letter-spacing:-1px}.hero-copy>p{font-size:10px}.hero-tags{gap:5px;margin-top:15px}.hero-tag{font-size:8px;padding:6px 7px}.ticker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ticker-card{padding:10px}.ticker-symbol{font-size:10px}.right-column{display:flex;flex-direction:column}.right-column>.analysis-stack{display:flex;width:100%}.chart-wrap{height:320px;min-height:285px}.chart-toolbar{flex-wrap:wrap;justify-content:flex-start}.chart-mode-tabs{width:100%}.chart-timeframes{max-width:100%;overflow-x:auto}.bottom-grid{grid-template-columns:minmax(0,1fr)}.bottom-grid>.info-panel{grid-column:auto}.footer-note{flex-direction:column}.model-info-grid{grid-template-columns:1fr 1fr}.result-metrics{margin-inline:-14px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* Functional multi-view navigation */
+.route-page{display:none;min-width:0}
+.route-page-header{margin:3px 0 15px;padding:5px 2px}
+.route-page-header[hidden]{display:none!important}
+.route-eyebrow{font-size:9px;letter-spacing:1.8px;text-transform:uppercase;font-weight:800;color:var(--blue);margin-bottom:7px}
+.route-page-header h1{font-size:clamp(23px,2.3vw,32px);line-height:1.15;letter-spacing:-1.1px;color:var(--text)}
+.route-page-header p{margin-top:7px;color:var(--muted);font-size:12px;line-height:1.6;max-width:760px}
+.route-panel{padding:17px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(150deg,var(--surface),color-mix(in srgb,var(--surface2) 75%,transparent));box-shadow:var(--shadow);min-width:0}
+.route-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.route-panel-heading h2{font-size:15px;letter-spacing:-.25px;color:var(--text)}
+.route-panel-heading p{font-size:11px;line-height:1.5;margin-top:5px;color:var(--muted)}
+.route-count{flex:0 0 auto;color:var(--cyan);background:color-mix(in srgb,var(--cyan) 9%,var(--surface));border:1px solid var(--border);border-radius:999px;padding:7px 10px;font-size:10px;font-weight:700}
+.route-refresh{border:1px solid var(--borderStrong);border-radius:9px;padding:8px 11px;background:var(--surface2);color:var(--text);font-weight:650;font-size:10px;cursor:pointer}
+.route-empty{padding:18px;color:var(--muted);font-size:12px}
+.market-page-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.market-directory-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;border:1px solid var(--border);border-radius:13px;padding:14px;background:var(--surface2);color:var(--text);cursor:pointer;transition:transform .18s,border-color .18s,background .18s;min-width:0}
+.market-directory-card:hover{transform:translateY(-2px);border-color:var(--borderStrong);background:var(--surface3)}
+.market-directory-top{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px}
+.market-directory-symbol{font-size:15px;font-weight:800;letter-spacing:-.3px;overflow-wrap:anywhere}
+.market-directory-type{font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:4px 7px}
+.market-directory-status{display:flex;align-items:center;gap:6px;color:var(--green);font-size:10px}
+.market-directory-cta{font-size:10px;color:var(--blue);margin-top:2px}
+.route-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:13px}
+.route-stat-card{padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:7px;min-width:0}
+.route-stat-card>span{font-size:10px;color:var(--muted)}
+.route-stat-card strong{font-size:21px;color:var(--text);letter-spacing:-.5px;overflow-wrap:anywhere}
+.route-stat-card small{font-size:9px;color:var(--muted2)}
+.model-inventory-list{display:flex;flex-direction:column;gap:7px}
+.model-inventory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;border:1px solid var(--border);background:var(--surface2)}
+.model-inventory-name{font-size:12px;font-weight:700;color:var(--text)}
+.model-inventory-key{font-size:10px;color:var(--muted);margin-top:4px}
+.model-inventory-state{font-size:9px;font-weight:750;border-radius:999px;padding:5px 8px;white-space:nowrap;color:var(--green);background:color-mix(in srgb,var(--green) 10%,var(--surface))}
+.model-inventory-state.unavailable{color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--surface))}
+.bottom-link{border:0;background:transparent;cursor:pointer;font:inherit;text-align:left}
+.main-area[data-active-view="markets"] #markets-route,.main-area[data-active-view="models"] #models-route{display:block}
+.main-area[data-active-view="markets"] .dashboard-grid,.main-area[data-active-view="markets"] .bottom-grid,.main-area[data-active-view="models"] .dashboard-grid{display:none}
+.main-area[data-active-view="analysis"] .dashboard-grid{grid-template-columns:minmax(0,1fr)}
+.main-area[data-active-view="analysis"] .left-column{display:block}
+.main-area[data-active-view="analysis"] .left-column .hero,.main-area[data-active-view="analysis"] .right-column{display:none}
+.main-area[data-active-view="analysis"] .bottom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.main-area[data-active-view="analysis"] .bottom-grid>*:not(#analysis-insights):not(#model-info){display:none}
+.main-area[data-active-view="history"] .dashboard-grid{display:none}
+.main-area[data-active-view="history"] .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:0}
+.main-area[data-active-view="history"] .bottom-grid>*:not(#recent-predictions){display:none}
+.main-area[data-active-view="history"] #recent-predictions{display:block;min-height:260px}
+.main-area[data-active-view="history"] #history-list .history-item{display:flex}
+.main-area[data-active-view="history"] .history-list{max-height:none;overflow:visible}
+.main-area[data-active-view="history"] .history-item{padding:12px 4px}
+.main-area[data-active-view="dashboard"] #history-list .history-item:nth-child(n+4){display:none}
+.main-area[data-active-view="models"] .dashboard-grid{display:none}
+.main-area[data-active-view="models"] .bottom-grid{display:grid;grid-template-columns:minmax(0,1fr);margin-top:13px}
+.main-area[data-active-view="models"] .bottom-grid>*:not(#model-info){display:none}
+.main-area[data-active-view="models"] #model-info{display:block}
+.main-area[data-active-view="dashboard"] #route-page-header{display:none}
+.main-area[data-active-view]:not([data-active-view="dashboard"]) #route-page-header:not([hidden]){display:block}
+@media(max-width:900px){.market-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.route-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.market-page-grid,.route-stat-grid,.theme-choice-grid{grid-template-columns:minmax(0,1fr)}.model-inventory-row{grid-template-columns:minmax(0,1fr);align-items:start}.route-panel{padding:12px}.route-page-header h1{font-size:24px}}
+
+
+/* Original orbital signal-lab brand card for the lower sidebar gap. */
+.sidebar-brand-card{margin-top:auto;margin-bottom:0;min-height:142px;flex:0 0 142px;position:relative;isolation:isolate;overflow:hidden;border:1px solid color-mix(in srgb,var(--blue) 34%,var(--border));border-radius:14px;padding:10px 11px 9px;background:radial-gradient(ellipse at 8% 12%,rgba(22,191,255,.2),transparent 40%),radial-gradient(ellipse at 95% 2%,rgba(132,70,255,.2),transparent 44%),linear-gradient(145deg,color-mix(in srgb,var(--surface2) 90%,#06193A),color-mix(in srgb,var(--surface) 96%,#080e20));box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 10px 26px rgba(0,0,0,.09)}
+.sidebar-brand-card:after{content:"";position:absolute;inset:auto -18% -30% 22%;height:60px;background:radial-gradient(ellipse,rgba(31,137,255,.2),transparent 68%);z-index:-1;pointer-events:none}
+.sidebar-brand-head{display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.sidebar-brand-logo{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(145deg,rgba(26,178,255,.13),rgba(137,74,255,.2));border:1px solid rgba(102,139,255,.26);box-shadow:0 0 16px rgba(56,123,255,.14)}
+.sidebar-brand-logo svg{width:21px;height:21px;display:block}
+.sidebar-brand-name{display:flex;flex-direction:column;min-width:0;gap:2px}
+.sidebar-brand-name span{font-size:7px;letter-spacing:1.1px;color:var(--muted2);font-weight:800;white-space:nowrap}
+.sidebar-brand-name strong{font-size:12px;letter-spacing:-.2px;color:var(--text);font-weight:750}
+.sidebar-brand-live{width:6px;height:6px;flex:0 0 6px;border-radius:50%;margin-left:auto;background:#29e5ae;box-shadow:0 0 10px rgba(41,229,174,.8);animation:sidebar-pulse 2.4s ease-in-out infinite}
+.sidebar-orbit-stage{height:65px;position:relative;margin-top:2px;overflow:hidden}
+.sidebar-orbit{position:absolute;left:50%;top:50%;border:1px solid rgba(71,150,255,.42);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+.sidebar-orbit-a{width:53px;height:53px;box-shadow:0 0 13px rgba(36,128,255,.12),inset 0 0 12px rgba(39,145,255,.07);animation:sidebar-orbit-breathe 5s ease-in-out infinite}
+.sidebar-orbit-b{width:81px;height:35px;transform:translate(-50%,-50%) rotate(29deg);border-color:rgba(58,207,255,.53)}
+.sidebar-orbit-c{width:97px;height:24px;transform:translate(-50%,-50%) rotate(-24deg);border-color:rgba(167,83,255,.53)}
+.sidebar-orbit-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:29px;height:29px;display:grid;place-items:center;border-radius:10px;color:#f5fbff;font-weight:900;font-size:17px;font-style:italic;background:linear-gradient(140deg,#14c9ff 0%,#4167ff 53%,#a44aff 100%);box-shadow:0 0 19px rgba(67,113,255,.52),inset 0 1px 0 rgba(255,255,255,.5)}
+.sidebar-orbit-node{position:absolute;width:5px;height:5px;border-radius:50%;background:#39d8ff;box-shadow:0 0 9px #39d8ff}
+.sidebar-orbit-node-a{left:calc(50% - 43px);top:24px}.sidebar-orbit-node-b{left:calc(50% + 38px);top:36px;background:#d873ff;box-shadow:0 0 9px #c76dff}
+.sidebar-signal-line{position:absolute;width:100%;height:27px;left:0;bottom:-2px;opacity:.9}
+.sidebar-brand-foot{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:6.5px;font-weight:800;letter-spacing:.55px;color:var(--muted2);white-space:nowrap}
+.sidebar-brand-foot b{color:#9a7aff;font-weight:900}
+.sidebar-quote{margin-top:0;min-height:112px;flex:0 0 112px}
+@keyframes sidebar-pulse{0%,100%{opacity:.65;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes sidebar-orbit-breathe{0%,100%{box-shadow:0 0 11px rgba(36,128,255,.11),inset 0 0 12px rgba(39,145,255,.07)}50%{box-shadow:0 0 22px rgba(36,128,255,.24),inset 0 0 16px rgba(39,145,255,.11)}}
+@media(prefers-reduced-motion:reduce){.sidebar-brand-live,.sidebar-orbit-a{animation:none}}
+
+</style>
+</head>
+<body>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden"><defs><filter id="hero-sharpen" x="-3%" y="-3%" width="106%" height="106%"><feConvolveMatrix order="3" kernelMatrix="0 -0.5 0 -0.5 3 -0.5 0 -0.5 0" preserveAlpha="true"/></filter></defs></svg>
+<header class="global-topbar">
+  <a class="brand" href="#top" aria-label="Asset Predictor Pro home">
+    <span class="brand-mark" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 32 32" fill="none"><path d="M16 3 29 27H22.3L16 15.4 9.7 27H3L16 3Z" fill="white"/><path d="M11.3 22.5H20.7" stroke="#70DFFF" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+    <span><span class="brand-name">ASSET PREDICTOR <span>PRO</span></span><span class="brand-tagline">AI powered market analysis</span></span>
+  </a>
+  <nav class="top-nav" aria-label="Main navigation">
+    <a class="active" href="#dashboard-view" data-view-target="dashboard" aria-current="page">Dashboard</a>
+    <a href="#markets-view" data-view-target="markets">Markets</a>
+    <a href="#analysis-view" data-view-target="analysis">Analysis</a>
+    <a href="#history-view" data-view-target="history">History</a>
+    <a href="#models-view" data-view-target="models">Models</a>
+    <a href="https://github.com/prajwal-dn/ai-assist-predictor-#readme" target="_blank" rel="noreferrer">Docs</a>
+  </nav>
+  <div class="top-actions">
+    <span class="status-pill" id="service-status" role="status" aria-live="polite"><span class="dot"></span><span id="service-status-text">CHECKING API</span></span>
+    <button class="theme-toggle" type="button" id="theme-toggle" onclick="toggleTheme()" aria-label="Switch color theme">☼ Light mode</button>
+    <span class="pair-pill" id="pair-display" aria-live="polite">Loading market</span>
+    <span class="models-pill"><span class="live-dot"></span><span id="model-inventory-count">Checking models</span></span>
+  </div>
+</header>
+<div class="app-shell" id="top">
+  <aside class="sidebar" aria-label="Dashboard sidebar">
+    <nav class="sidebar-nav" aria-label="Dashboard sections">
+      <button type="button" class="nav-link active" data-view-target="dashboard" aria-current="page"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
+      <button type="button" class="nav-link" data-view-target="analysis"><span class="nav-icon">⌁</span><span>Market Analysis</span></button>
+      <button type="button" class="nav-link" data-view-target="history"><span class="nav-icon">◷</span><span>History</span></button>
+      <button type="button" class="nav-link" data-view-target="models"><span class="nav-icon">⬡</span><span>Model Info</span></button>
+    </nav>
+    <section class="sidebar-card" aria-label="Supported markets">
+      <div class="sidebar-card-title">Supported Markets</div>
+      <div class="coverage-total"><span class="live-dot"></span><span id="sidebar-model-count">Loading models…</span></div>
+      <div class="coverage-list" id="coverage-list"><div class="coverage-item"><span class="coverage-icon">◌</span><span><strong>Checking inventory</strong><small>Connecting to API</small></span></div></div>
+    </section>
+    <section class="sidebar-brand-card" aria-label="Asset Predictor Signal Lab brand visual">
+      <div class="sidebar-brand-head">
+        <div class="sidebar-brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="presentation">
+            <defs><linearGradient id="sidebarLogoGradient" x1="4" y1="4" x2="43" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#27D9FF"/><stop offset=".52" stop-color="#477CFF"/><stop offset="1" stop-color="#B04CFF"/></linearGradient></defs>
+            <path d="M24 5.5 43 39H32.5L24 23.6 15.5 39H5L24 5.5Z" fill="url(#sidebarLogoGradient)"/>
+            <path d="M18.9 30.2h10.2" stroke="#F5FAFF" stroke-width="3.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="sidebar-brand-name"><span>ASSET PREDICTOR</span><strong>Signal Lab</strong></div>
+        <span class="sidebar-brand-live" aria-hidden="true"></span>
+      </div>
+      <div class="sidebar-orbit-stage" aria-hidden="true">
+        <span class="sidebar-orbit sidebar-orbit-a"></span><span class="sidebar-orbit sidebar-orbit-b"></span><span class="sidebar-orbit sidebar-orbit-c"></span>
+        <span class="sidebar-orbit-core">A</span><span class="sidebar-orbit-node sidebar-orbit-node-a"></span><span class="sidebar-orbit-node sidebar-orbit-node-b"></span>
+        <svg class="sidebar-signal-line" viewBox="0 0 168 32" preserveAspectRatio="none">
+          <defs><linearGradient id="sidebarSignalGradient" x1="0" y1="0" x2="168" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#25D8FF" stop-opacity=".1"/><stop offset=".55" stop-color="#38A8FF"/><stop offset="1" stop-color="#C04DFF"/></linearGradient></defs>
+          <path d="M0 26H25l8-6 7 4 10-15 8 12 10-5 7 3 7-11 8 7 9-2 8 6 9-10 8 8h24" fill="none" stroke="url(#sidebarSignalGradient)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sidebar-brand-foot"><span>MARKET INTELLIGENCE</span><span>AI <b>•</b> SIGNAL <b>•</b> RISK</span></div>
+    </section>
+    <div class="sidebar-quote"><p>Data today,<br>better decisions tomorrow.</p></div>
+  </aside>
+  <main class="main-area" data-active-view="dashboard">
+    <div id="error-box" role="alert" aria-live="assertive"></div>
+    <div class="readiness-notice" id="readiness-notice" role="status" aria-live="polite">Checking model artifacts and application readiness…</div>
+    <div class="sr-only" aria-hidden="true">
+      <span id="stat-backend-status"></span><span id="stat-current-market"></span><span id="stat-horizon"></span>
+      <span id="stat-model-count"></span><span id="model-market-label"></span><span id="model-confidence-label"></span>
+    </div>
+
+    <div id="route-page-header" class="route-page-header" hidden aria-live="polite">
+      <div class="route-eyebrow" id="route-page-eyebrow">YOUR MARKET WORKSPACE</div>
+      <h1 id="route-page-title">Dashboard</h1>
+      <p id="route-page-description">Your model-ready markets and latest analysis in one workspace.</p>
+    </div>
+    <section id="markets-route" class="route-page" aria-labelledby="markets-route-title">
+      <div class="route-panel">
+        <div class="route-panel-heading">
+          <div><h2 id="markets-route-title">Supported markets</h2><p>Only pairs returned by your backend model inventory appear here.</p></div>
+          <span class="route-count" id="markets-page-count">Checking models…</span>
+        </div>
+        <div class="market-page-grid" id="markets-page-grid"><div class="route-empty">Loading trained market pairs from the API…</div></div>
+      </div>
+    </section>
+    <section id="models-route" class="route-page" aria-labelledby="models-route-title">
+      <div class="route-stat-grid">
+        <article class="route-stat-card"><span>Verified model pairs</span><strong id="models-page-count">—</strong><small>Returned by /api/models</small></article>
+        <article class="route-stat-card"><span>Active model</span><strong id="models-page-active">—</strong><small>Current selection</small></article>
+        <article class="route-stat-card"><span>Artifact status</span><strong id="models-page-status">Checking…</strong><small>Current pair only</small></article>
+      </div>
+      <div class="route-panel">
+        <div class="route-panel-heading"><div><h2 id="models-route-title">Model inventory</h2><p>Real backend inventory; unavailable pairs are listed separately.</p></div>
+          <button type="button" class="route-refresh" onclick="refreshRouteData()">↻ Refresh</button>
+        </div>
+        <div id="models-page-inventory"><div class="route-empty">Loading backend inventory…</div></div>
+      </div>
+    </section>
+    <div class="dashboard-grid">
+      <div class="left-column">
+        <section class="hero" aria-labelledby="workspace-title">
+          <div class="hero-copy">
+            <div class="eyebrow"><span>✦</span> AI market analysis</div>
+            <h2 id="workspace-title">Smarter Signals.<br>Clearer <span>Decisions.</span></h2>
+            <p>AI-powered model predictions with market context, confidence probabilities, and volatility-aware risk levels.</p>
+            <div class="hero-tags">
+              <span class="hero-tag"><span class="tag-icon">⬡</span><strong id="hero-model-count">—</strong> trained models</span>
+              <span class="hero-tag"><span class="tag-icon">◈</span>Multi-asset support</span>
+              <span class="hero-tag"><span class="tag-icon">◷</span>On-demand analysis</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="market-chart" aria-labelledby="chart-heading">
+          <div class="panel-header"><div class="panel-title"><span class="panel-symbol">✧</span><span id="chart-heading">Market chart</span></div><div class="panel-caption">TradingView context · separate from model input data</div></div>
+          <div class="chart-toolbar" aria-label="Chart controls">
+            <div class="chart-mode-tabs" role="group" aria-label="Chart views">
+              <button type="button" class="chart-mode active" data-chart-mode="price" aria-pressed="true" onclick="setChartMode('price')">Price action</button>
+              <button type="button" class="chart-mode" data-chart-mode="indicators" aria-pressed="false" onclick="setChartMode('indicators')">Model details</button>
+            </div>
+            <div class="chart-timeframes" role="group" aria-label="Chart timeframe">
+              <button type="button" class="chart-timeframe" data-interval="1" onclick="setChartInterval('1')">1m</button>
+              <button type="button" class="chart-timeframe" data-interval="5" onclick="setChartInterval('5')">5m</button>
+              <button type="button" class="chart-timeframe" data-interval="15" onclick="setChartInterval('15')">15m</button>
+              <button type="button" class="chart-timeframe active" data-interval="60" onclick="setChartInterval('60')">1h</button>
+              <button type="button" class="chart-timeframe" data-interval="240" onclick="setChartInterval('240')">4h</button>
+              <button type="button" class="chart-timeframe" data-interval="D" onclick="setChartInterval('D')">1d</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><iframe id="tv-chart" title="TradingView market context chart" src="https://www.tradingview.com/widgetembed/?symbol=FX%3AEURUSD&interval=60&theme=dark&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0" allowtransparency="true" scrolling="no" loading="lazy"></iframe></div>
+        </section>
+      </div>
+
+      <div class="right-column">
+        <section class="ticker-grid" id="market-ticker" aria-label="Model-ready quick markets">
+          <button class="ticker-card" type="button" data-market="BTC-USD" aria-pressed="false" onclick="selectMarket('BTC-USD')"><span class="ticker-symbol">BTC/USD</span><span class="ticker-type">Crypto</span><span class="ticker-ready"><span class="live-dot"></span>Model ready</span></button>
+          <button class="ticker-card" type="button" data-market="ETH-USD" aria-pressed="false" onclick="selectMarket('ETH-USD')"><span class="ticker-symbol">ETH/USD</span><span class="ticker-type">Crypto</span><span class="ticker-ready"><span class="live-dot"></span>Model ready</span></button>
+          <button class="ticker-card" type="button" data-market="EURUSD=X" aria-pressed="false" onclick="selectMarket('EURUSD=X')"><span class="ticker-symbol">EUR/USD</span><span class="ticker-type">Forex</span><span class="ticker-ready"><span class="live-dot"></span>Model ready</span></button>
+          <button class="ticker-card" type="button" data-market="USDINR=X" aria-pressed="false" onclick="selectMarket('USDINR=X')"><span class="ticker-symbol">USD/INR</span><span class="ticker-type">Forex</span><span class="ticker-ready"><span class="live-dot"></span>Model ready</span></button>
+        </section>
+
+        <div class="analysis-stack">
+          <section class="panel" id="run-prediction" aria-labelledby="run-heading">
+            <div class="panel-header"><div class="panel-title"><span class="panel-symbol">✧</span><span id="run-heading">Run prediction</span></div><span class="panel-caption">Model inference</span></div>
+            <div class="run-body">
+              <div class="select-field"><label class="field-label" for="pair-select">Select market</label><select id="pair-select" class="form-control" onchange="onPairChange()" aria-label="Select a market pair"></select></div>
+              <div class="control-row">
+                <div class="select-field"><label class="field-label" for="timeframe-display">Timeframe</label><div id="timeframe-display" class="form-control" aria-live="polite">1 Hour</div></div>
+                <div class="select-field"><label class="field-label" for="horizon-display">Prediction horizon</label><div id="horizon-display" class="form-control" aria-live="polite">—</div></div>
+              </div>
+              <button class="primary-button" id="refresh-btn" onclick="fetchSignal()" disabled><span aria-hidden="true">▶</span> &nbsp;RUN PREDICTION</button>
+              <div class="run-options"><label class="field-label" for="auto-select" style="margin:0">Auto-refresh</label><select id="auto-select" class="form-control" onchange="setAutoRefresh()" aria-label="Automatic prediction refresh"><option value="0" selected>Off</option><option value="300">Every 5 minutes</option><option value="3600">Every hour</option></select></div>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="result-heading">
+            <div class="panel-header"><div class="panel-title"><span class="panel-symbol">◇</span><span id="result-heading">Prediction result</span></div><span class="prediction-live" id="result-state">Waiting</span></div>
+            <div class="prediction-body">
+              <div class="signal-row">
+                <div><div class="signal-value UNKNOWN" id="signal-val" aria-live="polite">—</div><p class="signal-caption" id="signal-caption">Run a prediction to generate a model signal.</p></div>
+                <div class="confidence-ring" id="confidence-ring" role="img" aria-label="Model confidence 0 percent"><div class="confidence-ring-inner"><strong id="conf-pct">0%</strong><small>confidence</small></div></div>
+              </div>
+              <div class="confidence-gauge"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+              <div class="prob-list">
+                <div class="prob-item"><label>Prob. down</label><div class="prob-bar"><span id="prob-down-bar"></span></div><strong id="prob-down">0.0%</strong></div>
+                <div class="prob-item"><label>Prob. up</label><div class="prob-bar"><span id="prob-up-bar"></span></div><strong id="prob-up">0.0%</strong></div>
+              </div>
+              <div class="result-metrics">
+                <div class="result-metric"><span>Current price</span><strong id="close-val">—</strong></div>
+                <div class="result-metric"><span>Stop loss</span><strong class="loss" id="sl-val">—</strong></div>
+                <div class="result-metric"><span>Take profit</span><strong class="profit" id="tp-val">—</strong></div>
+              </div>
+            </div>
+            <div class="result-footer"><span id="time-val">No prediction yet</span><span id="result-horizon">— horizon</span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <section class="bottom-grid">
+      <article class="info-panel" id="analysis-insights">
+        <div class="info-title"><span class="panel-symbol">✦</span>Key insights</div>
+        <div class="insight-list" id="insights-list">
+          <div class="insight-item"><span class="insight-dot">1</span><span>Run a prediction to see a summary of the model output.</span></div>
+          <div class="insight-item"><span class="insight-dot">2</span><span>Up/down probabilities are estimates, not guarantees.</span></div>
+          <div class="insight-item"><span class="insight-dot">3</span><span>Chart and model data feeds may differ.</span></div>
+        </div>
+      </article>
+
+      <article class="info-panel" id="model-info">
+        <div class="info-title"><span class="panel-symbol">⬡</span>Selected model details</div>
+        <div class="model-info-grid">
+          <div class="model-info-item"><span>Selected market</span><strong id="model-detail-pair">—</strong><small>Current API configuration</small></div>
+          <div class="model-info-item"><span>Artifact readiness</span><strong id="model-detail-status">Checking…</strong><small>Verified by backend</small></div>
+          <div class="model-info-item"><span>Input timeframe</span><strong id="model-detail-timeframe">—</strong><small>Configured model input</small></div>
+          <div class="model-info-item"><span>Forecast horizon</span><strong id="model-detail-horizon">—</strong><small>Configured output horizon</small></div>
+        </div>
+        <p class="model-note" id="model-detail-note">Model files being present does not guarantee market-data availability or a successful prediction. Those are checked when a run starts.</p>
+      </article>
+
+      <article class="info-panel" id="confidence-info">
+        <div class="info-title"><span class="panel-symbol">◉</span>Model confidence</div>
+        <div class="confidence-ring" id="confidence-summary-ring" role="img" aria-label="Model confidence not yet calculated" style="margin:9px auto 12px;width:96px;height:96px"><div class="confidence-ring-inner"><strong id="confidence-summary">—</strong><small>overall</small></div></div>
+        <div class="insight-list"><div class="insight-item"><span class="insight-dot">1</span><span>Confidence reflects the selected model's latest inference.</span></div><div class="insight-item"><span class="insight-dot">2</span><span>It is not a guarantee of prediction accuracy.</span></div></div>
+      </article>
+
+      <article class="info-panel" id="recent-predictions">
+        <div class="info-title"><span class="panel-symbol">◷</span><span>Recent predictions</span><span class="panel-caption" id="history-storage-status">This session</span></div>
+        <div class="history-list" id="history-list"><div class="empty-history">No predictions in this session yet.</div></div>
+        <button type="button" class="bottom-link" onclick="navigateToView('history')">View all saved runs ↗</button>
+      </article>
+    </section>
+
+    <footer class="footer-note"><span>Asset Predictor PRO · AI-assisted market research</span><span>Model outputs are estimates. Markets involve risk. <a href="https://github.com/prajwal-dn/ai-assist-predictor-#readme" target="_blank" rel="noreferrer">Source repository ↗</a></span></footer>
+  </main>
+</div>
+<script src="/assets/globe-parts/part-00.js"></script>
+<script src="/assets/globe-parts/part-01.js"></script>
+<script src="/assets/globe-parts/part-02.js"></script>
+<script src="/assets/globe-parts/part-03.js"></script>
+<script src="/assets/globe-parts/part-04a.js"></script>
+<script src="/assets/globe-parts/part-04b.js"></script>
+<script src="/assets/globe-parts/part-04c.js"></script>
+<script src="/assets/globe-parts/part-04d.js"></script>
+<script src="/assets/globe-parts/part-04e.js"></script>
+<script src="/assets/globe-parts/part-05.js"></script>
+<script>
+(() => {
+  const chunks = window.__assetGlobeChunks || [];
+  if (chunks.length === 6 && chunks.every(Boolean)) {
+    document.documentElement.style.setProperty(
+      '--globe-art',
+      'url("data:image/webp;base64,' + chunks.join('') + '")'
+    );
+  }
+})();
+</script>
+<script src="/api-config.js"></script>
+<script>
+let history = [];
+let autoTimer = null;
+let errorTimeout = null;
+
+function setServiceStatus(label, state, detail) {
+  const pill = document.getElementById('service-status');
+  const labelEl = document.getElementById('service-status-text');
+  const notice = document.getElementById('readiness-notice');
+  if (pill) pill.className = 'status-pill' + (state ? ' ' + state : '');
+  if (labelEl) labelEl.textContent = String(label || 'STATUS UNKNOWN').toUpperCase();
+  if (notice && detail) notice.textContent = detail;
+  if (notice) notice.className = 'readiness-notice' + (state ? ' ' + state : '');
+  const backendStat = document.getElementById('stat-backend-status');
+  if (backendStat) backendStat.textContent = state === 'ready' ? 'Responding' : state === 'offline' ? 'Check needed' : 'Checking…';
+}
+
+
+function applyTheme(theme) {
+  const light = theme === 'light';
+  document.body.classList.toggle('theme-light', light);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) {
+    btn.textContent = light ? '☾ Dark mode' : '☼ Light mode';
+    btn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  try { localStorage.setItem('asset-predictor-theme', light ? 'light' : 'dark'); } catch(e) {}
+  const frame = document.getElementById('tv-chart');
+  if (frame && frame.src) {
+    const url = new URL(frame.src);
+    url.searchParams.set('theme', light ? 'light' : 'dark');
+    frame.src = url.toString();
+  }
+}
+
+function toggleTheme() {
+  applyTheme(document.body.classList.contains('theme-light') ? 'dark' : 'light');
+}
+
+try {
+  const savedTheme = localStorage.getItem('asset-predictor-theme');
+  if (savedTheme === 'light') document.body.classList.add('theme-light');
+} catch(e) {}
+
+function showError(msg) {
+  const err = document.getElementById('error-box');
+  err.textContent = 'System notification: ' + String(msg || 'An unexpected error occurred.').slice(0, 700);
+  err.classList.add('show');
+  clearTimeout(errorTimeout);
+  errorTimeout = setTimeout(() => { err.classList.remove('show'); }, 5000);
+}
+
+function loadChart(symbol = "FX:EURUSD", interval = "60") {
+  window.assetPredictorCurrentSymbol = symbol || window.assetPredictorCurrentSymbol || "FX:EURUSD";
+  window.assetPredictorCurrentInterval = interval || window.assetPredictorCurrentInterval || "60";
+  const encoded = encodeURIComponent(window.assetPredictorCurrentSymbol);
+  const theme = document.body.classList.contains("theme-light") ? "light" : "dark";
+  const frame = document.getElementById("tv-chart");
+  frame.src = "https://www.tradingview.com/widgetembed/?symbol=" + encoded + "&interval=" + encodeURIComponent(window.assetPredictorCurrentInterval) + "&theme=" + theme + "&style=1&locale=en&hide_side_toolbar=0&allow_symbol_change=1&save_image=0";
+  document.querySelectorAll(".chart-timeframe").forEach(btn => btn.classList.toggle("active", btn.dataset.interval === String(window.assetPredictorCurrentInterval)));
+}
+
+function setChartInterval(interval) {
+  loadChart(window.assetPredictorCurrentSymbol || "FX:EURUSD", interval);
+}
+
+function setChartMode(mode) {
+  const selectedMode = mode === "indicators" ? "indicators" : "price";
+  document.querySelectorAll(".chart-mode").forEach(btn => {
+    const active = btn.dataset.chartMode === selectedMode;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+  const target = selectedMode === "indicators" ? document.getElementById("model-info") : document.getElementById("market-chart");
+  if (target) target.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+
+async function loadAppConfig(pairOverride = null) {
+  try {
+    const configUrl = '/api/config' + (pairOverride ? '?pair=' + encodeURIComponent(pairOverride) : '');
+    const res = await fetch(window.assetPredictorApiUrl(configUrl));
+    if (!res.ok) throw new Error('Could not load application configuration.');
+    const cfg = await res.json();
+    const pairCode = String(cfg.pair_code || cfg.pair || 'Unknown').toUpperCase();
+    const timeframe = String(cfg.timeframe || '1h').toUpperCase();
+    const horizon = Number(cfg.forecast_horizon || 4);
+    const horizonLabel = String(cfg.forecast_horizon_label || (horizon + ' hours'));
+    const detailPair = document.getElementById('model-detail-pair');
+    const detailStatus = document.getElementById('model-detail-status');
+    const detailTimeframe = document.getElementById('model-detail-timeframe');
+    const detailHorizon = document.getElementById('model-detail-horizon');
+    const detailNote = document.getElementById('model-detail-note');
+    if (detailPair) detailPair.textContent = pairCode;
+    if (detailStatus) detailStatus.textContent = cfg.model_exists ? 'Artifact present' : 'Unavailable';
+    if (detailTimeframe) detailTimeframe.textContent = timeframe;
+    if (detailHorizon) detailHorizon.textContent = horizonLabel;
+    if (detailNote) detailNote.textContent = cfg.model_exists
+      ? 'The backend detected this model artifact. Market-data access and successful inference are verified only when a prediction runs.'
+      : (cfg.model_status || 'No verified model artifact is available for the selected pair.');
+
+    const pairBadge = document.getElementById('pair-display');
+    if (pairBadge) pairBadge.textContent = `${pairCode} · ${timeframe} · ${horizonLabel.toUpperCase()}`;
+    document.getElementById('model-market-label').textContent = `${pairCode} model`;
+    document.getElementById('stat-current-market').textContent = pairCode;
+    document.getElementById('stat-horizon').textContent = horizonLabel;
+    document.getElementById('timeframe-display').textContent = timeframe === '1D' ? '1 Day' : timeframe === '4H' ? '4 Hours' : '1 Hour';
+    document.getElementById('horizon-display').textContent = horizonLabel;
+    document.getElementById('result-horizon').textContent = `${horizonLabel} horizon`;
+    loadChart(cfg.tradingview_symbol, cfg.tradingview_interval);
+
+    const sel = document.getElementById('pair-select');
+    if (sel && [...sel.options].some(option => option.value === cfg.pair)) sel.value = cfg.pair;
+    const runBtn = document.getElementById('refresh-btn');
+    if (runBtn) runBtn.disabled = !cfg.model_exists || !sel || sel.disabled;
+
+    if (cfg.model_exists) {
+      setServiceStatus('Artifacts present', 'ready', 'Model artifacts are detected. Market-data availability and successful model inference are checked when you run a prediction.');
+      document.getElementById('result-state').textContent = 'Ready';
+    } else {
+      setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model files were found. Download the actual model artifacts or retrain this market.');
+      document.getElementById('result-state').textContent = 'Unavailable';
+    }
+    return cfg;
+  } catch(e) {
+    const pairBadge = document.getElementById('pair-display');
+    if (pairBadge) pairBadge.textContent = 'API unavailable';
+    const btn = document.getElementById('refresh-btn');
+    if (btn) btn.disabled = true;
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load application configuration. Check the backend service.');
+    loadChart();
+    return null;
+  }
+}
+
+
+
+async function onPairChange() {
+  const pair = document.getElementById('pair-select').value;
+  document.querySelectorAll('.ticker-card').forEach(card => card.setAttribute('aria-pressed', String(card.dataset.market === pair)));
+  document.getElementById('error-box').classList.remove('show');
+  document.getElementById('refresh-btn').disabled = true;
+
+  try {
+    const cfg = await loadAppConfig(pair);
+    if (!cfg) return;
+    if (!cfg.model_exists) throw new Error(cfg.model_status || 'This market is not available.');
+    document.getElementById('refresh-btn').disabled = !cfg.model_exists;
+
+    document.getElementById('signal-val').textContent = '—';
+    document.getElementById('signal-val').className = 'signal-value UNKNOWN';
+    document.getElementById('signal-caption').textContent = 'Run a prediction to generate a model signal.';
+    document.getElementById('result-state').textContent = 'Ready';
+    document.getElementById('conf-pct').textContent = '0%';
+    document.getElementById('confidence-ring').style.setProperty('--ring-angle','0deg');
+    document.getElementById('confidence-ring').setAttribute('aria-label','Model confidence 0 percent');
+    document.getElementById('conf-fill').style.width = '0%';
+    document.getElementById('conf-fill').className = 'conf-fill';
+    document.getElementById('close-val').textContent = '—';
+    document.getElementById('sl-val').textContent = '—';
+    document.getElementById('tp-val').textContent = '—';
+    document.getElementById('prob-up').textContent = '0.0%';
+    document.getElementById('prob-down').textContent = '0.0%';
+    document.getElementById('prob-up-bar').style.width = '0%';
+    document.getElementById('prob-down-bar').style.width = '0%';
+    document.getElementById('time-val').textContent = 'No prediction yet';
+    document.getElementById('model-confidence-label').textContent = 'Not run';
+    document.getElementById('insights-list').innerHTML =
+      '<div class="insight-item"><span class="insight-dot">1</span><span>Run a prediction to see a summary of the model output.</span></div>';
+  } catch(e) {
+    showError(e.message || 'Failed to switch pair.');
+    const cfg = await loadAppConfig();
+    if (cfg && !cfg.model_exists) setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'The selected model is not ready.');
+  }
+}
+
+
+
+async function fetchSignal() {
+  const btn = document.getElementById('refresh-btn');
+  const sel = document.getElementById('pair-select');
+  document.getElementById('error-box').classList.remove('show');
+  let cfg = null;
+
+  try {
+    const selectedPair = sel.value;
+    const configUrl = '/api/config?pair=' + encodeURIComponent(selectedPair);
+    const configRes = await fetch(window.assetPredictorApiUrl(configUrl));
+    if (!configRes.ok) throw new Error('Could not check model readiness.');
+    cfg = await configRes.json();
+    if (!cfg.model_exists) {
+      btn.disabled = true;
+      setServiceStatus('Model unavailable', 'offline', cfg.model_status || 'No verified model is available for this market.');
+      showError(cfg.model_status || `No verified model for ${cfg.pair_code}.`);
+      return;
+    }
+  } catch(e) {
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not verify model readiness.');
+    showError(e.message || 'Could not verify model readiness. Check the server.');
+    btn.disabled = true;
+    return;
+  }
+
+  btn.disabled = true;
+  sel.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> ANALYZING…';
+  document.getElementById('result-state').textContent = 'Analyzing';
+
+  try {
+    const res = await fetch(window.assetPredictorApiUrl('/api/predict?pair=' + encodeURIComponent(selectedPair)));
+    const data = await res.json();
+    if (!res.ok || data.error || !['BUY','SELL','FLAT'].includes(data.signal)) {
+      const message = data.raw || data.error_message || 'Prediction failed. No valid signal was returned.';
+      setServiceStatus('Prediction failed', 'offline', message);
+      document.getElementById('result-state').textContent = 'Failed';
+      showError(message);
+      return;
+    }
+
+    updateUI(data);
+    addToHistory(data);
+    setServiceStatus('Prediction complete', 'ready', `Last analysis completed at ${new Date().toLocaleTimeString()}. Result uses the latest candle returned by the configured data provider.`);
+  } catch(e) {
+    setServiceStatus('Prediction failed', 'offline', 'The backend did not return a usable prediction. Review the error and retry.');
+    document.getElementById('result-state').textContent = 'Failed';
+    showError(e.message || 'Connection failed. Ensure the Railway service is running and the data provider is reachable.');
+  } finally {
+    sel.disabled = false;
+    btn.disabled = !(cfg && cfg.model_exists && sel.options.length > 0);
+    btn.innerHTML = '<span aria-hidden="true">▶</span> &nbsp;RUN PREDICTION';
+    setAutoRefresh();
+  }
+}
+
+
+
+function updateUI(d) {
+  const signal = ['BUY','SELL','FLAT'].includes(d.signal) ? d.signal : 'UNKNOWN';
+  const confidence = Math.max(0, Math.min(100, Number(d.confidence || 0)));
+  const probUp = Math.max(0, Math.min(100, Number(d.prob_up || 0)));
+  const probDown = Math.max(0, Math.min(100, Number(d.prob_down || 0)));
+  const close = Number(d.close || 0);
+  const val = document.getElementById('signal-val');
+  val.textContent = signal;
+  val.className = 'signal-value ' + signal;
+
+  document.getElementById('signal-caption').textContent = signal === 'BUY'
+    ? `Model leans bullish. Estimated upside probability: ${probUp.toFixed(1)}%.`
+    : signal === 'SELL'
+    ? `Model leans bearish. Estimated downside probability: ${probDown.toFixed(1)}%.`
+    : signal === 'FLAT'
+    ? 'The configured confidence threshold was not met for a directional signal.'
+    : 'No valid model signal was returned.';
+
+  document.getElementById('conf-pct').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('confidence-ring').style.setProperty('--ring-angle', (confidence * 3.6) + 'deg');
+  document.getElementById('confidence-ring').setAttribute('aria-label', 'Model confidence ' + confidence.toFixed(1) + ' percent');
+  const confFill = document.getElementById('conf-fill');
+  confFill.style.width = confidence + '%';
+  confFill.className = 'conf-fill ' + signal;
+
+  const closeEl = document.getElementById('close-val');
+  const oldVal = parseFloat(closeEl.textContent);
+  closeEl.textContent = Number.isFinite(close) ? close.toFixed(5) : '—';
+  closeEl.classList.remove('flash-up', 'flash-down');
+  if (Number.isFinite(oldVal)) {
+    void closeEl.offsetWidth;
+    if (close > oldVal) closeEl.classList.add('flash-up');
+    else if (close < oldVal) closeEl.classList.add('flash-down');
+  }
+  document.getElementById('sl-val').textContent = d.stop_loss != null && Number.isFinite(Number(d.stop_loss)) ? Number(d.stop_loss).toFixed(5) : '—';
+  document.getElementById('tp-val').textContent = d.take_profit != null && Number.isFinite(Number(d.take_profit)) ? Number(d.take_profit).toFixed(5) : '—';
+  document.getElementById('prob-up').textContent = probUp.toFixed(1) + '%';
+  document.getElementById('prob-down').textContent = probDown.toFixed(1) + '%';
+  document.getElementById('prob-up-bar').style.width = probUp + '%';
+  document.getElementById('prob-down-bar').style.width = probDown + '%';
+  document.getElementById('time-val').textContent = String(d.timestamp || '—').replace('T',' ').slice(0,16);
+  document.getElementById('result-state').textContent = 'Result ready';
+  document.getElementById('model-confidence-label').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('confidence-summary').textContent = confidence.toFixed(1) + '%';
+  document.getElementById('confidence-summary-ring').style.setProperty('--ring-angle', (confidence * 3.6) + 'deg');
+  document.getElementById('insights-list').innerHTML = [
+    `<div class="insight-item"><span class="insight-dot">1</span><span>Directional signal: <strong>${signal}</strong> at ${confidence.toFixed(1)}% model confidence.</span></div>`,
+    `<div class="insight-item"><span class="insight-dot">2</span><span>Model probabilities: ${probUp.toFixed(1)}% up vs ${probDown.toFixed(1)}% down.</span></div>`,
+    `<div class="insight-item"><span class="insight-dot">3</span><span>Risk reference: stop loss ${d.stop_loss == null ? 'not supplied' : Number(d.stop_loss).toFixed(5)}; take profit ${d.take_profit == null ? 'not supplied' : Number(d.take_profit).toFixed(5)}.</span></div>`
+  ].join('');
+}
+
+
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+}
+
+function renderHistoryItems(items) {
+  const list = document.getElementById('history-list');
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-history">No saved predictions found yet. Run a prediction to get started.</div>';
+    return;
+  }
+  list.innerHTML = items.slice(0,50).map(h => {
+    const signal = ['BUY','SELL','FLAT'].includes(h.signal || h.trade_signal) ? (h.signal || h.trade_signal) : 'UNKNOWN';
+    const timestamp = String(h.timestamp || h.candle_timestamp || h.run_timestamp || '');
+    const closeValue = Number(h.close != null ? h.close : h.close_price);
+    const confidence = Number(h.confidence || 0);
+    const pair = h.pair || document.getElementById('pair-select').value || 'Market';
+    const pairLabel = pair.replace('=X','').replace('-','/');
+    return `<div class="history-item">
+      <div><div class="history-market">${escapeHtml(pairLabel)}</div><div class="history-meta">${escapeHtml(timestamp.replace('T',' ').slice(0,16) || 'Timestamp unavailable')}</div></div>
+      <div class="history-result"><span class="h-sig ${signal}">${signal}</span><div class="h-time">${Number.isFinite(closeValue) && closeValue !== 0 ? closeValue.toFixed(4) : 'Price —'} · ${confidence.toFixed(1)}%</div></div>
+    </div>`;
+  }).join('');
+}
+
+function addToHistory(d) {
+  const pair = document.getElementById('pair-select');
+  history.unshift({
+    ...d,
+    pair: pair && pair.selectedOptions.length ? pair.selectedOptions[0].textContent : ''
+  });
+  if (history.length > 50) history.pop();
+  renderHistoryItems(history);
+}
+
+async function loadSavedHistory() {
+  try {
+    const response = await fetch(window.assetPredictorApiUrl('/api/history?limit=50'));
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (!Array.isArray(payload.runs)) return;
+    const saved = payload.runs.map(run => ({
+      signal: run.trade_signal, confidence: run.confidence, close: run.close_price,
+      timestamp: run.candle_timestamp || run.run_timestamp, run_timestamp: run.run_timestamp, pair: run.pair
+    }));
+    const keyOf = item => [item.pair || '', item.timestamp || item.run_timestamp || '', item.signal || item.trade_signal || ''].join('|');
+    const seen = new Set(history.map(keyOf));
+    history = [...history, ...saved.filter(item => { const key = keyOf(item); if (seen.has(key)) return false; seen.add(key); return true; })].slice(0,50);
+    renderHistoryItems(history);
+    if (saved.length) document.getElementById('history-storage-status').textContent = 'Saved history + this session';
+  } catch(e) {
+    // Session history remains usable when saved storage is offline.
+  }
+}
+
+async function loadHistoryStorageStatus() {
+  try {
+    const response = await fetch(window.assetPredictorApiUrl('/api/db_status'));
+    if (!response.ok) return;
+    const info = await response.json();
+    document.getElementById('history-storage-status').textContent =
+      info.cloud_sync_enabled ? 'Cloud sync configured' : info.connected ? 'Local storage' : 'Storage unavailable';
+  } catch(e) {}
+}
+
+
+
+function setAutoRefresh() {
+  clearInterval(autoTimer);
+  const secs = parseInt(document.getElementById('auto-select').value, 10);
+  if (!secs || document.getElementById('refresh-btn').disabled) return;
+  autoTimer = setInterval(fetchSignal, secs * 1000);
+}
+
+function selectMarket(pair) {
+  const select = document.getElementById('pair-select');
+  if (!select) return;
+  const option = [...select.options].find(item => item.value === pair);
+  if (!option) {
+    showError('This quick market is not currently available.');
+    return;
+  }
+  select.value = pair;
+  document.querySelectorAll('.ticker-card').forEach(card => card.setAttribute('aria-pressed', String(card.dataset.market === pair)));
+  onPairChange();
+}
+
+function renderMarketCoverage(pairs) {
+  const forexCount = pairs.filter(pair => !pair.includes('-')).length;
+  const cryptoCount = pairs.filter(pair => pair.includes('-')).length;
+  const total = pairs.length;
+  const coverage = document.getElementById('coverage-list');
+  coverage.innerHTML = [
+    {icon:'⌁',name:'Forex & currencies',count:forexCount},
+    {icon:'◈',name:'Crypto assets',count:cryptoCount}
+  ].map(item => `<div class="coverage-item"><span class="coverage-icon">${item.icon}</span><span><strong>${item.name}</strong><small>${item.count} trained pairs</small></span></div>`).join('');
+  document.getElementById('sidebar-model-count').textContent = total + ' trained pairs';
+  document.getElementById('hero-model-count').textContent = total;
+  document.getElementById('stat-model-count').textContent = total;
+  document.getElementById('model-inventory-count').textContent = total + ' models';
+  document.getElementById('stat-backend-status').textContent = 'Connected';
+
+  const quickPairs = {
+    'BTC-USD':'btc-usd',
+    'ETH-USD':'eth-usd',
+    'EURUSD=X':'eurusd',
+    'USDINR=X':'usdinr'
+  };
+  document.querySelectorAll('.ticker-card').forEach(card => {
+    const pairKey = quickPairs[card.dataset.market];
+    const ready = Boolean(pairKey && pairs.includes(pairKey));
+    card.disabled = !ready;
+    card.setAttribute('aria-disabled', String(!ready));
+    const state = card.querySelector('.ticker-ready');
+    if (state) state.innerHTML = ready
+      ? '<span class="live-dot"></span>Model ready'
+      : 'Model unavailable';
+  });
+}
+
+async function initApp() {
+  const sel = document.getElementById('pair-select');
+  const runBtn = document.getElementById('refresh-btn');
+  const allPairs = {
+    "eurusd": ["EURUSD=X", "EUR/USD"],
+    "gbpusd": ["GBPUSD=X", "GBP/USD"],
+    "usdjpy": ["USDJPY=X", "USD/JPY"],
+    "usdchf": ["USDCHF=X", "USD/CHF"],
+    "audusd": ["AUDUSD=X", "AUD/USD"],
+    "usdcad": ["USDCAD=X", "USD/CAD"],
+    "nzdusd": ["NZDUSD=X", "NZD/USD"],
+    "eurgbp": ["EURGBP=X", "EUR/GBP"],
+    "eurjpy": ["EURJPY=X", "EUR/JPY"],
+    "gbpjpy": ["GBPJPY=X", "GBP/JPY"],
+    "inrusd": ["INRUSD=X", "INR/USD"],
+    "usdinr": ["USDINR=X", "USD/INR"],
+    "btc-usd": ["BTC-USD", "BTC/USD"],
+    "eth-usd": ["ETH-USD", "ETH/USD"],
+    "sol-usd": ["SOL-USD", "SOL/USD"]
+  };
+
+  try {
+    const res = await fetch(window.assetPredictorApiUrl('/api/models'));
+    if (!res.ok) throw new Error('Could not load model inventory.');
+    const data = await res.json();
+    sel.innerHTML = '';
+    const pairs = Array.isArray(data.trained_pairs) ? data.trained_pairs : [];
+    pairs.forEach(key => {
+      if (!allPairs[key]) return;
+      const [value, label] = allPairs[key];
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    });
+    renderMarketCoverage(pairs.filter(key => allPairs[key]));
+    if (sel.options.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'No verified models available';
+      sel.appendChild(opt);
+      sel.disabled = true;
+      runBtn.disabled = true;
+    } else {
+      sel.disabled = false;
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Model inventory unavailable</option>';
+    sel.disabled = true;
+    runBtn.disabled = true;
+    setServiceStatus('Service unavailable', 'offline', e.message || 'Could not load the model inventory.');
+  }
+
+  const cfg = await loadAppConfig();
+  if (cfg && !cfg.model_exists && sel.options.length && sel.options[0].value) {
+    sel.value = sel.options[0].value;
+    try { await onPairChange(); } catch(e) {}
+  }
+
+  let theme = 'dark';
+  try { theme = localStorage.getItem('asset-predictor-theme') || 'dark'; } catch(e) {}
+  applyTheme(theme);
+  await Promise.all([loadSavedHistory(),loadHistoryStorageStatus()]);
+  setAutoRefresh();
+  const activeView = document.querySelector('.main-area')?.dataset.activeView || 'dashboard';
+  if (activeView === 'markets') renderMarketsPage();
+  if (activeView === 'models') renderModelsPage();
+}
+
+
+
+const routeDescriptions = {
+  dashboard: {eyebrow:'YOUR MARKET WORKSPACE',title:'Dashboard',description:'Your model-ready markets, recent inference results, and market context in one workspace.'},
+  markets: {eyebrow:'MODEL COVERAGE',title:'Markets',description:'Browse the markets your backend reports as trained. Choose one to open its prediction workspace.'},
+  analysis: {eyebrow:'PRICE CONTEXT',title:'Market Analysis',description:'Explore a full-width TradingView chart. Its feed provides context and is separate from the model input data.'},
+  history: {eyebrow:'PAST MODEL RUNS',title:'Prediction History',description:'Review predictions saved by the backend and runs recorded during this browser session.'},
+  models: {eyebrow:'ARTIFACT INVENTORY',title:'Model Information',description:'Inspect the trained-pair inventory reported by the API and the active pair configuration.'}
+};
+const routePairMap = {
+  audusd:['AUDUSD=X','AUD/USD'],'btc-usd':['BTC-USD','BTC/USD'],'eth-usd':['ETH-USD','ETH/USD'],
+  eurgbp:['EURGBP=X','EUR/GBP'],'eurjpy':['EURJPY=X','EUR/JPY'],'eurusd':['EURUSD=X','EUR/USD'],
+  gbpjpy:['GBPJPY=X','GBP/JPY'],'gbpusd':['GBPUSD=X','GBP/USD'],'inrusd':['INRUSD=X','INR/USD'],
+  nzdusd:['NZDUSD=X','NZD/USD'],'sol-usd':['SOL-USD','SOL/USD'],'usdcad':['USDCAD=X','USD/CAD'],
+  usdchf:['USDCHF=X','USD/CHF'],'usdinr':['USDINR=X','USD/INR'],'usdjpy':['USDJPY=X','USD/JPY']
+};
+
+function navigateToView(view, shouldScroll = true) {
+  if (!Object.prototype.hasOwnProperty.call(routeDescriptions, view)) view = 'dashboard';
+  const main = document.querySelector('.main-area');
+  if (!main) return;
+  main.dataset.activeView = view;
+  const heading = document.getElementById('route-page-header');
+  const meta = routeDescriptions[view];
+  document.getElementById('route-page-eyebrow').textContent = meta.eyebrow;
+  document.getElementById('route-page-title').textContent = meta.title;
+  document.getElementById('route-page-description').textContent = meta.description;
+  heading.hidden = view === 'dashboard';
+
+  document.querySelectorAll('[data-view-target]').forEach(control => {
+    const active = control.dataset.viewTarget === view;
+    control.classList.toggle('active', active);
+    if (active) control.setAttribute('aria-current','page');
+    else control.removeAttribute('aria-current');
+  });
+  if (view === 'markets') renderMarketsPage();
+  if (view === 'models') renderModelsPage();
+  if (view === 'history') loadSavedHistory();
+  if (shouldScroll) window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function initNavigation() {
+  document.querySelectorAll('[data-view-target]').forEach(control => {
+    control.addEventListener('click', event => {
+      event.preventDefault();
+      navigateToView(control.dataset.viewTarget);
+    });
+  });
+  navigateToView('dashboard', false);
+}
+
+function makeRouteEmpty(container, message) {
+  container.replaceChildren();
+  const item = document.createElement('div');
+  item.className = 'route-empty';
+  item.textContent = message;
+  container.appendChild(item);
+}
+
+function renderMarketsPage() {
+  const grid = document.getElementById('markets-page-grid');
+  const select = document.getElementById('pair-select');
+  if (!grid) return;
+  const options = select ? [...select.options].filter(option => option.value) : [];
+  grid.replaceChildren();
+  if (!options.length) {
+    makeRouteEmpty(grid, 'No trained markets are available yet. Check the API status and model inventory.');
+    document.getElementById('markets-page-count').textContent = 'No markets';
+    return;
+  }
+  document.getElementById('markets-page-count').textContent = options.length + ' trained pairs';
+  options.forEach(option => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'market-directory-card';
+    card.addEventListener('click', () => {
+      selectMarket(option.value);
+      navigateToView('dashboard', false);
+      const predictionPanel = document.getElementById('run-prediction');
+      if (predictionPanel) predictionPanel.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+    const top = document.createElement('span');
+    top.className = 'market-directory-top';
+    const symbol = document.createElement('span');
+    symbol.className = 'market-directory-symbol';
+    symbol.textContent = option.textContent;
+    const type = document.createElement('span');
+    type.className = 'market-directory-type';
+    type.textContent = option.value.includes('-') ? 'Crypto' : 'Forex';
+    top.append(symbol,type);
+    const status = document.createElement('span');
+    status.className = 'market-directory-status';
+    status.textContent = '● Trained model available';
+    const cta = document.createElement('span');
+    cta.className = 'market-directory-cta';
+    cta.textContent = 'Select for prediction →';
+    card.append(top,status,cta);
+    grid.appendChild(card);
+  });
+}
+
+async function renderModelsPage() {
+  const list = document.getElementById('models-page-inventory');
+  if (!list) return;
+  list.textContent = 'Loading verified model inventory…';
+  try {
+    const [modelsResponse, configResponse] = await Promise.all([
+      fetch(window.assetPredictorApiUrl('/api/models')),
+      fetch(window.assetPredictorApiUrl('/api/config'))
+    ]);
+    if (!modelsResponse.ok) throw new Error('Model inventory endpoint returned HTTP ' + modelsResponse.status);
+    const inventory = await modelsResponse.json();
+    const trained = Array.isArray(inventory.trained_pairs) ? inventory.trained_pairs : [];
+    const unavailable = inventory.unavailable_pairs && typeof inventory.unavailable_pairs === 'object' ? inventory.unavailable_pairs : {};
+    let config = null;
+    if (configResponse.ok) config = await configResponse.json();
+    document.getElementById('models-page-count').textContent = String(trained.length);
+    document.getElementById('models-page-active').textContent = config ? String(config.pair_code || config.pair || '—').toUpperCase() : '—';
+    document.getElementById('models-page-status').textContent = config ? (config.model_exists ? 'Artifact present' : 'Unavailable') : 'API unavailable';
+    list.replaceChildren();
+    const rows = document.createElement('div');
+    rows.className = 'model-inventory-list';
+    trained.forEach(key => {
+      const display = routePairMap[key] ? routePairMap[key][1] : key.toUpperCase();
+      const row = document.createElement('div');
+      row.className = 'model-inventory-row';
+      const detail = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'model-inventory-name';
+      name.textContent = display;
+      const sub = document.createElement('div');
+      sub.className = 'model-inventory-key';
+      sub.textContent = key + ' · returned in trained_pairs';
+      detail.append(name,sub);
+      const state = document.createElement('span');
+      state.className = 'model-inventory-state';
+      state.textContent = 'Trained pair';
+      row.append(detail,state);
+      rows.appendChild(row);
+    });
+    Object.entries(unavailable).forEach(([key,reason]) => {
+      const row = document.createElement('div');
+      row.className = 'model-inventory-row';
+      const detail = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'model-inventory-name';
+      name.textContent = routePairMap[key] ? routePairMap[key][1] : key.toUpperCase();
+      const sub = document.createElement('div');
+      sub.className = 'model-inventory-key';
+      sub.textContent = String(reason || 'Not available').slice(0,180);
+      detail.append(name,sub);
+      const state = document.createElement('span');
+      state.className = 'model-inventory-state unavailable';
+      state.textContent = 'Unavailable';
+      row.append(detail,state);
+      rows.appendChild(row);
+    });
+    if (!trained.length && !Object.keys(unavailable).length) makeRouteEmpty(list,'The API returned no trained or unavailable model pairs.');
+    else list.appendChild(rows);
+  } catch(error) {
+    document.getElementById('models-page-count').textContent = '—';
+    document.getElementById('models-page-active').textContent = '—';
+    document.getElementById('models-page-status').textContent = 'API unavailable';
+    makeRouteEmpty(list, error.message || 'Could not load the model inventory. Check backend connectivity.');
+  }
+}
+
+function refreshRouteData() {
+  if (document.querySelector('.main-area').dataset.activeView === 'markets') renderMarketsPage();
+  renderModelsPage();
+}
+
+
+initNavigation();
+initApp();
+</script>
+
+</body>
+</html>

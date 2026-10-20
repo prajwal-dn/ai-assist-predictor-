@@ -47,7 +47,7 @@ By automating the complex analysis of historical data, technical indicators, and
 *   **Live Interactive Charting:** Embedded real-time TradingView widget for simultaneous price action analysis.
 *   **Premium Glassmorphism UI:** A sleek, dark-mode aesthetic with live status indicators and dynamic probability gauges.
 *   **Automated Risk Management:** Calculates dynamic **Stop Loss** and **Take Profit** levels based on current market volatility (ATR), enforcing strict risk discipline.
-*   **Permanent Run History:** Automatically saves and syncs every AI prediction to a secure Hugging Face Dataset, which can be viewed directly in the application's *Run History* dashboard.
+*   **Run History:** Stores prediction runs in local JSON and optionally syncs to a Hugging Face Dataset when `HF_TOKEN` is configured. The dashboard distinguishes local history from configured cloud sync.
 
 ---
 
@@ -105,6 +105,28 @@ When a prediction is run, the model returns one of three outcomes:
 *   🟡 **FLAT:** The market lacks a clear statistical edge or the confidence is below your threshold. Capital preservation is prioritized; do not trade.
 
 ---
+
+
+## ⚙️ Readiness & Deployment Notes
+
+- The dashboard checks whether all model artifact files exist and are real files rather than Git LFS pointer placeholders before listing a market as available.
+- Ensure Git LFS downloads the actual `*_xgboost.pkl`, `*_scaler.pkl`, and `*_feature_cols.pkl` contents in the deployment environment. If only pointer text files are present, predictions will be blocked with a diagnostic message.
+- The embedded TradingView chart is market context only. Prediction candles are independently fetched by the Python backend from TwelveData when configured, with Yahoo Finance as the fallback.
+- History storage works locally without `HF_TOKEN`. Set a Hugging Face token as a deployment secret to enable optional dataset sync; do not commit tokens to this repository.
+- The project does not execute trades. Predictions and ATR-based stop/take-profit levels are research outputs, not guarantees of future performance.
+
+
+## ✅ Deployment Verification
+
+The Python API/back-end runs as a Dockerized service on port `7860` in its backend host (Railway or Hugging Face Spaces). If the frontend is hosted separately on Vercel, it must be configured to call the backend's public URL rather than same-origin `/api/...` paths. After deployment, use the backend's confirmed public URL to test `/health`, `/api/config`, `/api/models`, and `/api/db_status`; test `/` and `/history` on whichever service serves the pages.
+
+**Important:** The repository homepage metadata and the live-link text above currently refer to two different Hugging Face Space subdomains. Confirm the actual URL in the Hugging Face Spaces dashboard before treating either link as canonical.
+
+See [Hugging Face Spaces deployment checklist](docs/HF_SPACE_DEPLOYMENT.md) for the smoke-test steps, expected health response, model-artifact checks, and Vercel auto-deployment shutdown instructions.
+
+### Hosting topology note
+
+The repository currently contains a Python backend and HTML pages at its root. A separate Vercel frontend + Railway backend deployment needs an explicit static frontend root/build and a Railway API base URL; these are documented but depend on confirming the actual Railway public domain.
 
 ## ⚠️ Disclaimer
 **This software is for educational and research purposes only.** Foreign exchange trading carries a high level of risk and may not be suitable for all investors. Past performance is not indicative of future results. The authors and contributors are not responsible for any financial losses incurred while using this tool. Always practice strict risk management and test strategies on a demo account before risking real capital.

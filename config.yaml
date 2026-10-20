@@ -12,7 +12,7 @@ timeframe: "1h"
 # For Hugging Face Spaces, add this as a Secret named TWELVEDATA_API_KEY.
 twelvedata_api_key: ""
 
-# How many hours ahead to predict (1 = next candle)
+# Number of future candles to forecast (elapsed duration depends on timeframe)
 forecast_horizon: 4
 
 # How many years of history to download for training
@@ -43,11 +43,27 @@ features:
   atr_period: 14
   bb_period: 20       # Bollinger Bands
   bb_std: 2
+  # New retrains use prior completed daily bars; legacy saved models declare legacy in metadata.
+  daily_context_mode: "completed"
 
 # Risk management
 risk:
   max_risk_per_trade: 0.01   # 1% of account per trade
   atr_stop_multiplier: 1.5   # stop-loss = 1.5 × ATR
+
+# Backtest equity is denominated in the quote currency of the selected pair.
+backtest:
+  starting_balance: 10000
+
+# Simulation-only forward test. No broker connection or real orders.
+paper_trading:
+  enabled: true
+  starting_balance: 10000
+  # Estimated ROUND-TRIP costs in basis points of average position notional.
+  # Adjust these to your intended venue before interpreting results.
+  spread_bps: 5.0
+  commission_bps: 0.0
+  slippage_bps: 2.0
 
 # Paths (relative to project root)
 paths:

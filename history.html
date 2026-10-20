@@ -344,6 +344,56 @@
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .stat-value { font-size: 22px; }
   }
+
+  /* Shared design language with the dashboard */
+  .header, .stats-grid, .controls-bar, .table-container, .pagination { width:100%; max-width:1440px; margin-left:auto; margin-right:auto; }
+  .header { gap:16px; }
+  .logo-group { flex-wrap:wrap; min-width:0; }
+  .nav-links { align-items:center; flex-wrap:wrap; }
+  .theme-toggle { background:transparent; cursor:pointer; font:600 12px 'Inter',sans-serif; }
+  .db-badge.local { color:#93c5fd; background:rgba(59,130,246,.08); border-color:rgba(59,130,246,.22); }
+  .db-badge.local .db-dot { background:#60a5fa; box-shadow:0 0 8px #60a5fa; }
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  .stat-card { text-align:left; }
+  .stat-card .stat-label { margin-bottom:10px; }
+  .table-container { border:1px solid var(--border); border-radius:16px; }
+  .table-container .glass { min-width:0; }
+  table { min-width:980px; }
+  .table-container { overflow-x:auto; }
+  .loading, .empty-state { min-height:200px; }
+  body.theme-light {
+    --bg:#f3f6fb; --card-bg:rgba(255,255,255,.88); --card-bg-solid:#fff;
+    --border:rgba(15,23,42,.12); --border-hover:rgba(15,23,42,.22);
+    --accent:#2563eb; --text:#111827; --text-dim:#526176; --text-muted:#66758a;
+    --buy:#059669; --buy-bg:rgba(5,150,105,.08); --buy-border:rgba(5,150,105,.24);
+    --sell:#dc2626; --sell-bg:rgba(220,38,38,.07); --sell-border:rgba(220,38,38,.23);
+    --flat:#b45309; --flat-bg:rgba(180,83,9,.08); --flat-border:rgba(180,83,9,.22);
+  }
+  body.theme-light { background-image:radial-gradient(circle at 20% 20%,rgba(37,99,235,.07),transparent 50%),radial-gradient(circle at 80% 80%,rgba(5,150,105,.05),transparent 50%); }
+  body.theme-light .glass { background:rgba(255,255,255,.84); }
+  body.theme-light thead th { background:rgba(248,250,252,.97); }
+  body.theme-light tbody tr:hover { background:rgba(37,99,235,.04); }
+  body.theme-light .db-badge.connected { color:#047857; }
+  body.theme-light .db-badge.disconnected { color:#b91c1c; }
+  body.theme-light .db-badge.local { color:#1d4ed8; }
+  @media (max-width:768px) {
+    body { padding:12px; }
+    .header { align-items:flex-start; }
+    .logo-group { align-items:flex-start; gap:10px; }
+    .logo-group h1 { font-size:19px; }
+    .nav-links { width:100%; }
+    .nav-link { padding:8px 12px; }
+    .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .stat-card { padding:15px; }
+    .stat-value { font-size:22px; }
+    .controls-bar { gap:8px; }
+    .search-input { min-width:150px; width:100%; }
+    .table-container { border-radius:12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -351,7 +401,7 @@
 <div class="header">
   <div class="logo-group">
     <h1>RUN HISTORY <span style="font-weight:300;opacity:0.5">LOG</span></h1>
-    <div class="db-badge disconnected" id="db-badge">
+    <div class="db-badge disconnected" id="db-badge" role="status" aria-live="polite">
       <div class="db-dot"></div>
       <span id="db-status-text">CHECKING...</span>
     </div>
@@ -427,7 +477,6 @@
   </div>
 </div>
 
-<div class="pagination" id="pagination"></div>
 
 <script>
 const ALL_PAIRS = {
@@ -438,21 +487,54 @@ const ALL_PAIRS = {
   "BTC-USD": "BTC/USD", "ETH-USD": "ETH/USD", "SOL-USD": "SOL/USD"
 };
 
+function applyTheme(theme) {
+  const light = theme === 'light';
+  document.body.classList.toggle('theme-light', light);
+  const button = document.getElementById('theme-toggle');
+  if (button) {
+    button.textContent = light ? '☾ DARK MODE' : '☼ LIGHT MODE';
+    button.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  try { localStorage.setItem('asset-predictor-theme', light ? 'light' : 'dark'); } catch(e) {}
+}
+function toggleTheme() {
+  applyTheme(document.body.classList.contains('theme-light') ? 'dark' : 'light');
+}
+try {
+  if (localStorage.getItem('asset-predictor-theme') === 'light') document.body.classList.add('theme-light');
+} catch(e) {}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[character]));
+}
+
 async function checkDbStatus() {
+  const badge = document.getElementById('db-badge');
+  const label = document.getElementById('db-status-text');
   try {
     const res = await fetch('/api/db_status');
     const data = await res.json();
-    const badge = document.getElementById('db-badge');
-    const text = document.getElementById('db-status-text');
-    if (data.connected) {
-      badge.className = 'db-badge connected';
-      text.textContent = 'DATASET ONLINE';
-    } else {
+    if (!res.ok || !data.connected) {
       badge.className = 'db-badge disconnected';
-      text.textContent = 'DATASET OFFLINE';
+      label.textContent = 'HISTORY UNAVAILABLE';
+      badge.title = data.message || 'Local history storage is unavailable.';
+      return false;
     }
-    return data.connected;
+    if (data.cloud_sync_enabled) {
+      badge.className = 'db-badge connected';
+      label.textContent = 'CLOUD SYNC CONFIGURED';
+    } else {
+      badge.className = 'db-badge local';
+      label.textContent = 'LOCAL HISTORY';
+    }
+    badge.title = data.message || '';
+    return true;
   } catch(e) {
+    badge.className = 'db-badge disconnected';
+    label.textContent = 'STATUS UNAVAILABLE';
+    badge.title = 'Could not query history storage status.';
     return false;
   }
 }
@@ -461,7 +543,11 @@ async function loadStats() {
   try {
     const res = await fetch('/api/stats');
     const s = await res.json();
-    if (s.error) return;
+    if (!res.ok || s.error) {
+      document.getElementById('stat-total').textContent = '—';
+      document.getElementById('stat-period').textContent = 'Stats unavailable';
+      return;
+    }
 
     document.getElementById('stat-total').textContent = s.total_runs || 0;
     document.getElementById('stat-buy').textContent = s.buy_count || 0;
@@ -496,6 +582,7 @@ async function loadHistory() {
     const res = await fetch(url);
     const data = await res.json();
 
+    if (!res.ok && !data.error) throw new Error('History request failed.');
     if (data.error) {
       content.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Database Unavailable</h3><p>${data.error}</p></div>`;
       return;
@@ -524,51 +611,42 @@ function renderTable(runs) {
   let html = `<table>
     <thead>
       <tr>
-        <th>#</th>
-        <th>Date & Time</th>
-        <th>Pair</th>
-        <th>Timeframe</th>
-        <th>Signal</th>
-        <th>Confidence</th>
-        <th>Prob ↑</th>
-        <th>Prob ↓</th>
-        <th>Close Price</th>
-        <th>Stop Loss</th>
-        <th>Take Profit</th>
-        <th>Candle Time</th>
+        <th>#</th><th>Date & Time</th><th>Pair</th><th>Timeframe</th>
+        <th>Signal</th><th>Confidence</th><th>Prob ↑</th><th>Prob ↓</th>
+        <th>Close Price</th><th>Stop Loss</th><th>Take Profit</th><th>Candle Time</th>
       </tr>
-    </thead>
-    <tbody>`;
+    </thead><tbody>`;
 
-  runs.forEach((r, i) => {
-    const date = r.run_timestamp ? r.run_timestamp.slice(0, 10) : '—';
-    const time = r.run_timestamp ? r.run_timestamp.slice(11, 19) : '—';
-    const signal = r.trade_signal || 'UNKNOWN';
-    const conf = r.confidence || 0;
+  runs.forEach((r) => {
+    const timestamp = String(r.run_timestamp || '');
+    const date = timestamp ? timestamp.slice(0, 10) : '—';
+    const time = timestamp ? timestamp.slice(11, 19) : '—';
+    const signal = ['BUY','SELL','FLAT'].includes(r.trade_signal) ? r.trade_signal : 'UNKNOWN';
+    const conf = Math.max(0, Math.min(100, Number(r.confidence) || 0));
     const confClass = conf >= 65 ? 'high' : conf >= 55 ? 'medium' : 'low';
-    const pairLabel = ALL_PAIRS[r.pair] || r.pair;
+    const pairLabel = ALL_PAIRS[r.pair] || r.pair || '—';
+    const close = Number(r.close_price);
+    const stop = Number(r.stop_loss);
+    const take = Number(r.take_profit);
+    const probUp = Number(r.prob_up);
+    const probDown = Number(r.prob_down);
+    const candleTime = String(r.candle_timestamp || '—').slice(0,16);
 
     html += `<tr>
-      <td class="run-id">${r.id}</td>
-      <td>
-        <div class="run-date">${date}</div>
-        <div class="run-time">${time}</div>
-      </td>
-      <td><span class="pair-tag">${pairLabel}</span></td>
-      <td>${r.timeframe}</td>
+      <td class="run-id">${escapeHtml(r.id)}</td>
+      <td><div class="run-date">${escapeHtml(date)}</div><div class="run-time">${escapeHtml(time)}</div></td>
+      <td><span class="pair-tag">${escapeHtml(pairLabel)}</span></td>
+      <td>${escapeHtml(r.timeframe || '—')}</td>
       <td><span class="signal-badge ${signal}"><span class="signal-dot"></span>${signal}</span></td>
-      <td>
-        <div class="conf-bar-container">
-          <div class="conf-bar"><div class="conf-bar-fill ${confClass}" style="width:${conf}%"></div></div>
-          <span>${conf.toFixed(1)}%</span>
-        </div>
-      </td>
-      <td style="color:var(--buy)">${r.prob_up ? r.prob_up.toFixed(1) + '%' : '—'}</td>
-      <td style="color:var(--sell)">${r.prob_down ? r.prob_down.toFixed(1) + '%' : '—'}</td>
-      <td style="color:var(--text);font-weight:500">${r.close_price ? r.close_price.toFixed(5) : '—'}</td>
-      <td style="color:var(--sell)">${r.stop_loss ? r.stop_loss.toFixed(5) : '—'}</td>
-      <td style="color:var(--buy)">${r.take_profit ? r.take_profit.toFixed(5) : '—'}</td>
-      <td class="run-time">${r.candle_timestamp ? r.candle_timestamp.slice(0, 16) : '—'}</td>
+      <td><div class="conf-bar-container">
+        <div class="conf-bar"><div class="conf-bar-fill ${confClass}" style="width:${conf}%"></div></div>
+        <span>${conf.toFixed(1)}%</span></div></td>
+      <td style="color:var(--buy)">${Number.isFinite(probUp) ? probUp.toFixed(1) + '%' : '—'}</td>
+      <td style="color:var(--sell)">${Number.isFinite(probDown) ? probDown.toFixed(1) + '%' : '—'}</td>
+      <td style="color:var(--text);font-weight:500">${Number.isFinite(close) && close !== 0 ? close.toFixed(5) : '—'}</td>
+      <td style="color:var(--sell)">${Number.isFinite(stop) && stop !== 0 ? stop.toFixed(5) : '—'}</td>
+      <td style="color:var(--buy)">${Number.isFinite(take) && take !== 0 ? take.toFixed(5) : '—'}</td>
+      <td class="run-time">${escapeHtml(candleTime)}</td>
     </tr>`;
   });
 
@@ -578,29 +656,18 @@ function renderTable(runs) {
 
 async function populatePairFilter() {
   const sel = document.getElementById('pair-filter');
-  try {
-    const res = await fetch('/api/models');
-    const data = await res.json();
-    if (data.trained_pairs) {
-      data.trained_pairs.forEach(key => {
-        // Build yfinance-style pair code from the key
-        let pair;
-        if (key.includes('-')) {
-          pair = key.toUpperCase();
-        } else {
-          pair = key.toUpperCase() + '=X';
-        }
-        const label = ALL_PAIRS[pair] || pair;
-        const opt = document.createElement('option');
-        opt.value = pair;
-        opt.textContent = label;
-        sel.appendChild(opt);
-      });
-    }
-  } catch(e) {}
+  Object.entries(ALL_PAIRS).forEach(([pair, label]) => {
+    const opt = document.createElement('option');
+    opt.value = pair;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  });
 }
 
 async function init() {
+  let theme = 'dark';
+  try { theme = localStorage.getItem('asset-predictor-theme') || 'dark'; } catch(e) {}
+  applyTheme(theme);
   await checkDbStatus();
   await populatePairFilter();
   await Promise.all([loadStats(), loadHistory()]);
