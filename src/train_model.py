@@ -180,14 +180,22 @@ def evaluate(model, scaler, test_df: pd.DataFrame, feature_cols: list,
 
 
 def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str, metadata: dict = None):
+    """Persist XGBoost in its portable JSON format; keep a legacy pickle fallback."""
     model_dir = project_path(model_dir)
     os.makedirs(model_dir, exist_ok=True)
-    model_path  = os.path.join(model_dir, f"{pair}_xgboost.pkl")
+    native_model_path = os.path.join(model_dir, f"{pair}_xgboost.json")
+    legacy_model_path = os.path.join(model_dir, f"{pair}_xgboost.pkl")
     scaler_path = os.path.join(model_dir, f"{pair}_scaler.pkl")
-    cols_path   = os.path.join(model_dir, f"{pair}_feature_cols.pkl")
+    cols_path = os.path.join(model_dir, f"{pair}_feature_cols.pkl")
 
-    # Replace artifacts atomically so an interrupted retrain cannot leave partial files.
-    for artifact, path in ((model, model_path), (scaler, scaler_path), (list(feature_cols), cols_path)):
+    # Write scaler/features and the legacy compatibility snapshot atomically.
+    # Runtime inference prefers the native JSON file, whose format is stable
+    # across XGBoost versions, over the Python pickle memory snapshot.
+    for artifact, path in (
+        (model, legacy_model_path),
+        (scaler, scaler_path),
+        (list(feature_cols), cols_path),
+    ):
         temporary_path = path + ".tmp"
         try:
             joblib.dump(artifact, temporary_path)
@@ -195,6 +203,15 @@ def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str, met
         finally:
             if os.path.exists(temporary_path):
                 os.unlink(temporary_path)
+
+    # XGBoost selects the portable model format from the .json suffix.
+    temporary_path = native_model_path + ".tmp.json"
+    try:
+        model.save_model(temporary_path)
+        os.replace(temporary_path, native_model_path)
+    finally:
+        if os.path.exists(temporary_path):
+            os.unlink(temporary_path)
 
     if metadata is not None:
         metadata_path = os.path.join(model_dir, f"{pair}_metadata.json")
@@ -210,7 +227,8 @@ def save_model(model, scaler, feature_cols: list, model_dir: str, pair: str, met
             if os.path.exists(temporary_path):
                 os.unlink(temporary_path)
 
-    print(f"[INFO] Model  saved -> {model_path}")
+    print(f"[INFO] Native XGBoost model saved -> {native_model_path}")
+    print(f"[INFO] Legacy model snapshot saved -> {legacy_model_path}")
     print(f"[INFO] Scaler saved -> {scaler_path}")
     print(f"[INFO] Cols   saved -> {cols_path}")
 
