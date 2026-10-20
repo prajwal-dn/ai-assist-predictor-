@@ -29,6 +29,7 @@ data/history.json*
 
 models/*
 !models/*_xgboost.pkl
+!models/*_xgboost.json
 !models/*_scaler.pkl
 !models/*_feature_cols.pkl
 !models/*_metadata.json
