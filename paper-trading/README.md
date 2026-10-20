@@ -5,8 +5,8 @@ This workflow observes real market data and produces hypothetical entries, exits
 ## How it works
 
 - The Hourly paper trading workflow runs at 7 minutes past each hour after it is enabled on the default branch. Use Actions → Hourly paper trading → Run workflow for an immediate test on a selected branch and pair.
-- The initial run does not backfill old trades. It records the latest completed candle, then uses the signal from a completed candle and the next forming 1-hour candle's open as a hypothetical entry.
-- Open positions are monitored using subsequent completed OHLC candles. If a candle touches both stop and target, the simulator assumes the stop happened first. Stop gaps fill at the candle open; target gaps fill conservatively at target.
+- The initial run does not backfill old trades. It records the latest completed candle, generates a signal from that completed candle, and—if a later 1-hour candle is available—uses the most recently observed price of that still-forming candle as the hypothetical entry. The entry timestamp is the workflow's actual execution time; it does not assume a fill at the candle's historical open.
+- Open positions are monitored using later completed OHLC candles. The candle already in progress at entry is excluded from stop/target checks because its high/low may include price action from before the simulated entry. If a later candle touches both stop and target, the simulator assumes the stop happened first. Stop gaps fill at the candle open; target gaps fill conservatively at target.
 - The configured horizon controls maximum holding duration in completed 1-hour candles. Only 1-hour execution is enabled initially; unsupported timeframes fail closed rather than inventing a fill.
 - Each pair has its own virtual account, denominated in the pair's quote currency. Results across different quote currencies are not combined or converted to USD.
 - Estimated round-trip spread, commission and slippage are subtracted from P&L. These values are configurable in config.yaml and must be replaced with realistic estimates for your intended venue.
