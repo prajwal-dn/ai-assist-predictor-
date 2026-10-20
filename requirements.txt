@@ -1,8 +1,10 @@
 # Core Requirements (Optimized for Production)
+# Saved StandardScaler artifacts were serialized with scikit-learn 1.8.0.
+# The runtime must use Python 3.11+ because scikit-learn 1.8 dropped Python 3.10.
 yfinance>=0.2.40
 pandas==2.2.2
 numpy==1.26.4
-scikit-learn==1.4.2
+scikit-learn==1.8.0
 xgboost==2.0.3
 ta==0.11.0
 pyyaml==6.0.1
