@@ -15,7 +15,15 @@ Never commit these values, add them to the public log branch, or send them in ch
 
 Alpaca availability and supported tradable symbols can vary by account eligibility and may change. Each run checks Alpaca's authenticated crypto asset list and skips pairs that are not active and tradable.
 
-## 2. Validate first — no orders submitted
+## 2. One-time XGBoost serialization migration
+
+Before validating crypto models for paper trading, open **Actions → Migrate XGBoost models to native JSON → Run workflow** on branch `main), and choose `ALL_CRYPTO`.
+
+The workflow loads the existing SOL/BTC/ETH pickle snapshots, writes native JSON models, reloads each JSON file, and compares class labels plus probabilities on a deterministic 19-row probe. It commits the new JSON artifacts to `main) only if the comparisons pass within a maximum absolute probability difference of 1e-6. The old pickle files are kept as rollback/fallback artifacts. This migration does not retrain models and does not submit orders.
+
+The one-time conversion may still report that the legacy pickle emitted a warning when loaded; the key acceptance check is that the freshly loaded native JSON artifacts pass without the legacy-snapshot warning in the subsequent validation run. If the conversion fails or predictions differ, it stops without committing the converted files.
+
+## 3. Validate first — no orders submitted
 
 Open Actions → Alpaca crypto paper trading → Run workflow:
 
@@ -27,7 +35,7 @@ Validation checks the paper account, supported crypto assets, market-data freshn
 
 If a pair fails to load its Git LFS model artifact or its available market data, don't enable order submission for that pair until corrected. The model artifacts are existing models; this integration does not train or certify them.
 
-## 3. Submit simulated paper orders
+## 4. Submit simulated paper orders
 
 Only after validation succeeds, manually run the workflow again with Mode set to paper_trade. This submits simulated market orders on the paper API only.
 
@@ -42,7 +50,7 @@ Safety constraints in this initial integration:
 
 The account's simulated balance is controlled by Alpaca's paper account settings; it is separate from the original simulator's 10,000-unit virtual account.
 
-## 4. Optional hourly automatic orders
+## 5. Optional hourly automatic orders
 
 The workflow runs hourly in validation-only mode by default. Scheduled runs must not place orders unless you explicitly opt in.
 
