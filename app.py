@@ -39,8 +39,10 @@ def is_git_lfs_pointer(path: str) -> bool:
 
 def artifact_status(pair: str, model_dir: str) -> dict:
     """Validate all three model artifacts without deserializing them."""
+    native_model = os.path.join(model_dir, f"{pair}_xgboost.json")
+    legacy_model = os.path.join(model_dir, f"{pair}_xgboost.pkl")
     paths = {
-        "model": os.path.join(model_dir, f"{pair}_xgboost.pkl"),
+        "model": native_model if os.path.isfile(native_model) else legacy_model,
         "scaler": os.path.join(model_dir, f"{pair}_scaler.pkl"),
         "features": os.path.join(model_dir, f"{pair}_feature_cols.pkl"),
     }
