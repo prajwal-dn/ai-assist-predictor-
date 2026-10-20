@@ -48,11 +48,14 @@ class PaperTradingUnitTests(unittest.TestCase):
     def test_opening_uses_next_bar_open_and_atr_risk(self):
         state = initial_pair_state(10000)
         action = open_position(
-            "SOL-USD", state, bar("2025-01-01T02:00:00", 100, 101, 99, 100),
-            buy_signal(), test_config()
+            "SOL-USD", state, bar("2025-01-01T02:00:00", 98, 101, 97, 100),
+            buy_signal(), test_config(), entered_at="2025-01-01T02:07:00Z"
         )
         self.assertEqual(action["type"], "OPENED")
+        # The sampled live price is the current candle close/last price, not
+        # the candle open from seven minutes earlier.
         self.assertEqual(action["entry_price"], 100)
+        self.assertEqual(state["position"]["entry_time"], "2025-01-01T02:07:00Z")
         self.assertEqual(state["position"]["stop_loss"], 97)
         self.assertEqual(state["position"]["take_profit"], 106)
         self.assertAlmostEqual(state["position"]["risk_amount_quote"], 100)
@@ -98,6 +101,22 @@ class PaperTradingUnitTests(unittest.TestCase):
     def test_no_position_means_no_exit_actions(self):
         state = initial_pair_state(10000)
         self.assertEqual(process_completed_candle("SOL-USD", state, bar("2025-01-01T02:00:00", 100, 101, 99, 100), test_config()["paper_trading"]), [])
+
+
+    def test_partial_entry_candle_is_not_used_for_exit(self):
+        cfg = test_config()
+        state = initial_pair_state(10000)
+        open_position(
+            "SOL-USD", state, bar("2025-01-01T01:00:00", 100, 101, 99, 100),
+            buy_signal(), cfg, entered_at="2025-01-01T01:07:00Z"
+        )
+        # These extremes happened in a candle already in progress at entry.
+        actions = process_completed_candle(
+            "SOL-USD", state, bar("2025-01-01T01:00:00", 100, 110, 90, 100),
+            cfg["paper_trading"]
+        )
+        self.assertEqual(actions, [])
+        self.assertIsNotNone(state["position"])
 
     def test_state_is_written_atomically(self):
         with tempfile.TemporaryDirectory() as directory:
