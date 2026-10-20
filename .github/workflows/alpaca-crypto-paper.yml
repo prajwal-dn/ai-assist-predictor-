@@ -1,0 +1,121 @@
+name: Alpaca crypto paper trading
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      pair:
+        description: Crypto pair to inspect (all three by default)
+        required: true
+        type: choice
+        default: ALL
+        options:
+          - ALL
+          - SOL/USD
+          - BTC/USD
+          - ETH/USD
+      mode:
+        description: Validate first; choose paper_trade only after credentials and review
+        required: true
+        type: choice
+        default: validate
+        options:
+          - validate
+          - paper_trade
+
+permissions:
+  contents: write
+
+# Share the lock with the original simulator so both workflows cannot write the log branch at once.
+concurrency:
+  group: asset-predictor-paper-trading
+  cancel-in-progress: false
+
+jobs:
+  alpaca-paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PAPER_PAIRS: ${{ github.event.inputs.pair || 'ALL' }}
+      ALLOW_PAPER_ORDERS: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'paper_trade') || vars.ALPACA_PAPER_AUTO_TRADE == 'true' }}
+      ALPACA_PAPER_MAX_NOTIONAL_USD: ${{ vars.ALPACA_PAPER_MAX_NOTIONAL_USD || '25' }}
+      ALPACA_PAPER_API_KEY: ${{ secrets.ALPACA_PAPER_API_KEY }}
+      ALPACA_PAPER_API_SECRET: ${{ secrets.ALPACA_PAPER_API_SECRET }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Check out code and real Git LFS model artifacts
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install model and data dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Restore broker paper state and logs
+        run: |
+          mkdir -p paper-trading
+          git fetch origin paper-trading-log
+          for file in alpaca-state.json alpaca-runs.jsonl alpaca-orders.jsonl; do
+            if git cat-file -e "origin/paper-trading-log:paper-trading/$file" 2>/dev/null; then
+              git show "origin/paper-trading-log:paper-trading/$file" > "paper-trading/$file"
+            fi
+          done
+          test -f paper-trading/alpaca-state.json || printf '{"schema_version":1,"updated_at_utc":null,"pairs":{}}\n' > paper-trading/alpaca-state.json
+          touch paper-trading/alpaca-runs.jsonl paper-trading/alpaca-orders.jsonl
+
+      - name: Run validation or paper-trading cycle
+        run: |
+          if [[ -z "$ALPACA_PAPER_API_KEY" || -z "$ALPACA_PAPER_API_SECRET" ]]; then
+            printf '{"status":"WAITING_FOR_SECRETS","message":"Add ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET in GitHub Actions secrets; no broker request or order was made.","simulation_only":true}\n' >> paper-trading/alpaca-runs.jsonl
+            echo "::warning::Configure ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET to validate the paper account."
+            exit 0
+          fi
+          if [[ "$ALLOW_PAPER_ORDERS" == "true" ]]; then
+            python src/alpaca_paper_trade.py --pairs "$PAPER_PAIRS" --execute
+          else
+            python src/alpaca_paper_trade.py --pairs "$PAPER_PAIRS"
+          fi
+
+      - name: Upload run report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpaca-crypto-paper-${{ github.run_number }}
+          path: |
+            paper-trading/alpaca-state.json
+            paper-trading/alpaca-runs.jsonl
+            paper-trading/alpaca-orders.jsonl
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Persist paper state and logs
+        if: always()
+        run: |
+          test -f paper-trading/alpaca-state.json || exit 0
+          git fetch origin paper-trading-log
+          git worktree add --detach /tmp/paper-trading-log origin/paper-trading-log
+          mkdir -p /tmp/paper-trading-log/paper-trading
+          for file in alpaca-state.json alpaca-runs.jsonl alpaca-orders.jsonl; do
+            if test -f "paper-trading/$file"; then
+              cp "paper-trading/$file" "/tmp/paper-trading-log/paper-trading/$file"
+            fi
+          done
+          cd /tmp/paper-trading-log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper-trading/alpaca-state.json paper-trading/alpaca-runs.jsonl paper-trading/alpaca-orders.jsonl
+          if git diff --cached --quiet; then
+            echo "No Alpaca paper-state changes to persist."
+            exit 0
+          fi
+          git commit -m "alpaca paper trading: run ${{ github.run_number }}"
+          git push origin HEAD:paper-trading-log
