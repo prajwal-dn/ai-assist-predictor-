@@ -225,8 +225,11 @@ def close_position(pair: str, pair_state: dict, bar: pd.Series,
 
 
 def open_position(pair: str, pair_state: dict, bar: pd.Series,
-                  signal: dict, cfg: dict) -> dict:
-    entry = _as_float(bar["open"], "entry_open")
+                  signal: dict, cfg: dict, entered_at: str = None) -> dict:
+    # The hourly workflow runs after the candle opens. Its open is historical
+    # by then, so use the most recently observed price from the forming candle.
+    entry = _as_float(bar["close"], "observed_price")
+    entry_time = entered_at or utc_now()
     atr = _as_float(signal["atr"], "signal_atr")
     atr_multiplier = _as_float(cfg["risk"]["atr_stop_multiplier"], "atr_stop_multiplier")
     risk_fraction = _as_float(cfg["risk"]["max_risk_per_trade"], "max_risk_per_trade")
@@ -244,7 +247,8 @@ def open_position(pair: str, pair_state: dict, bar: pd.Series,
         "direction": signal["signal"],
         "signal_time": signal["timestamp"],
         "signal_candle_start": signal.get("candle_start", signal["timestamp"]),
-        "entry_time": _iso(bar["datetime"]),
+        "entry_time": entry_time,
+        "entry_candle_start": _iso(bar["datetime"]),
         "entry_price": entry,
         "stop_loss": entry - stop_size if is_long else entry + stop_size,
         "take_profit": entry + 2 * stop_size if is_long else entry - 2 * stop_size,
@@ -259,7 +263,7 @@ def open_position(pair: str, pair_state: dict, bar: pd.Series,
     }
     return {
         "type": "OPENED", "pair": pair, "direction": signal["signal"],
-        "signal_time": signal["timestamp"], "entry_time": _iso(bar["datetime"]),
+        "signal_time": signal["timestamp"], "entry_time": entry_time,
         "entry_price": entry, "stop_loss": pair_state["position"]["stop_loss"],
         "take_profit": pair_state["position"]["take_profit"],
         "confidence": float(signal["confidence"]), "quantity": quantity,
@@ -273,6 +277,11 @@ def process_completed_candle(pair: str, pair_state: dict, bar: pd.Series,
     if pair_state.get("position") is None:
         return []
     position = pair_state["position"]
+    # This candle was already in progress when the sampled-price entry was
+    # simulated; its earlier high/low cannot safely be used for post-entry exits.
+    entry_time = position.get("entry_time")
+    if entry_time and _timestamp(bar["datetime"]) <= _timestamp(entry_time):
+        return []
     exit_signal = position_exit(position, bar, int(position["horizon"]))
     if exit_signal is None:
         return [{
@@ -407,7 +416,9 @@ def run_pair(pair_arg: str, state: dict, state_path: Path = STATE_PATH) -> dict:
 
     if pair_state.get("position") is None and forming_bar is not None:
         if latest_signal["signal"] in ("BUY", "SELL"):
-            actions.append(open_position(pair, pair_state, forming_bar, latest_signal, cfg))
+            actions.append(open_position(
+                pair, pair_state, forming_bar, latest_signal, cfg, entered_at=utc_now()
+            ))
         else:
             actions.append({
                 "type": "NO_ENTRY", "pair": pair,
