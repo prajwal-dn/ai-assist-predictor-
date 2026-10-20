@@ -37,6 +37,7 @@ def rooted_path(path: str) -> str:
 def _model_artifact_paths(model_dir: str, pair: str) -> list:
     return [
         os.path.join(model_dir, f"{pair}_xgboost.pkl"),
+        os.path.join(model_dir, f"{pair}_xgboost.json"),
         os.path.join(model_dir, f"{pair}_scaler.pkl"),
         os.path.join(model_dir, f"{pair}_feature_cols.pkl"),
         os.path.join(model_dir, f"{pair}_metadata.json"),
@@ -100,12 +101,17 @@ def check_accuracy_drop(cfg: dict, pair: str, min_accuracy: float = 0.52):
     import numpy as np
     from sklearn.metrics import accuracy_score
 
-    model_path = os.path.join(model_dir, f"{pair}_xgboost.pkl")
+    native_model_path = os.path.join(model_dir, f"{pair}_xgboost.json")
+    legacy_model_path = os.path.join(model_dir, f"{pair}_xgboost.pkl")
     scaler_path = os.path.join(model_dir, f"{pair}_scaler.pkl")
     cols_path = os.path.join(model_dir, f"{pair}_feature_cols.pkl")
-    model, scaler, feature_cols = (
-        joblib.load(model_path), joblib.load(scaler_path), joblib.load(cols_path)
-    )
+    if os.path.isfile(native_model_path):
+        from xgboost import XGBClassifier
+        model = XGBClassifier()
+        model.load_model(native_model_path)
+    else:
+        model = joblib.load(legacy_model_path)
+    scaler, feature_cols = joblib.load(scaler_path), joblib.load(cols_path)
     test_df = pd.read_csv(test_file, parse_dates=["datetime"])
     if test_df.empty:
         raise ValueError("Held-out test dataset is empty.")
