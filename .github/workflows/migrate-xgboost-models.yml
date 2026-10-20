@@ -1,0 +1,75 @@
+name: Migrate XGBoost models to native JSON
+
+on:
+  workflow_dispatch:
+    inputs:
+      pairs:
+        description: Crypto models to migrate (requires LFS artifacts on main)
+        required: true
+        type: choice
+        default: ALL_CRYPTO
+        options:
+          - ALL_CRYPTO
+          - SOL
+          - BTC
+          - ETH
+
+permissions:
+  contents: write
+
+concurrency:
+  group: xgboost-model-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out main and real Git LFS model artifacts
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install model dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Convert and verify the selected native JSON models
+        env:
+          MIGRATION_PAIRS: ${{ github.event.inputs.pairs || 'ALL_CRYPTO' }}
+        run: |
+          case "$MIGRATION_PAIRS" in
+            ALL_CRYPTO) PAIRS="sol-usd,btc-usd,eth-usd" ;;
+            SOL) PAIRS="sol-usd" ;;
+            BTC) PAIRS="btc-usd" ;;
+            ETH) PAIRS="eth-usd" ;;
+            *) echo "Unsupported migration selection." >&2; exit 2 ;;
+          esac
+          python src/migrate_xgboost_models.py --pairs "$PAIRS"
+
+      - name: Commit only successfully verified model artifacts to main
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "This migration must run from main." >&2
+            exit 2
+          fi
+          git lfs install
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models/*_xgboost.json
+          if git diff --cached --quiet; then
+            echo "No new native XGBoost model artifacts to commit."
+            exit 0
+          fi
+          git commit -m "models: migrate XGBoost artifacts to native JSON"
+          git push origin HEAD:main
