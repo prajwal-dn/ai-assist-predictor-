@@ -3,11 +3,11 @@
     "SOL-USD": {
       "closed_trades": 12,
       "equity": 9748.991977477024,
-      "last_processed_candle": "2026-10-23T18:00:00",
+      "last_processed_candle": "2026-10-23T21:00:00",
       "losses": 8,
       "position": {
         "atr_at_signal": 0.7221434081253877,
-        "bars_held": 0,
+        "bars_held": 2,
         "confidence": 0.6538195908069611,
         "direction": "SELL",
         "entry_candle_start": "2026-10-23T19:00:00",
@@ -29,5 +29,5 @@
     }
   },
   "schema_version": 1,
-  "updated_at_utc": "2026-10-23T19:06:00+00:00"
+  "updated_at_utc": "2026-10-23T22:04:21+00:00"
 }
