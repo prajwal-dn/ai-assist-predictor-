@@ -93,3 +93,5 @@
 {"actions": [], "completed_candle_time": "2026-10-24T15:00:00", "event_time_utc": "2026-10-24T18:03:48+00:00", "pair": "SOL-USD", "simulation_only": true, "status": "NO_OPEN_POSITION"}
 {"actions": [], "completed_candle_time": "2026-10-24T16:00:00", "event_time_utc": "2026-10-24T18:03:48+00:00", "pair": "SOL-USD", "simulation_only": true, "status": "NO_OPEN_POSITION"}
 {"actions": [], "completed_candle_time": "2026-10-24T17:00:00", "event_time_utc": "2026-10-24T18:03:48+00:00", "pair": "SOL-USD", "simulation_only": true, "status": "NO_OPEN_POSITION"}
+{"actions": [], "completed_candle_time": "2026-10-24T18:00:00", "event_time_utc": "2026-10-24T20:41:26+00:00", "pair": "SOL-USD", "simulation_only": true, "status": "NO_OPEN_POSITION"}
+{"actions": [{"bars_held": 1, "candle_time": "2026-10-24T19:00:00", "pair": "SOL-USD", "type": "POSITION_HELD"}], "completed_candle_time": "2026-10-24T19:00:00", "event_time_utc": "2026-10-24T20:41:26+00:00", "pair": "SOL-USD", "simulation_only": true, "status": "POSITION_UPDATED"}
