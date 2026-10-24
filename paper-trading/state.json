@@ -1,33 +1,33 @@
 {
   "pairs": {
     "SOL-USD": {
-      "closed_trades": 15,
-      "equity": 10141.57029676748,
-      "last_processed_candle": "2026-10-24T19:00:00",
-      "losses": 8,
+      "closed_trades": 16,
+      "equity": 10049.042841676546,
+      "last_processed_candle": "2026-10-24T22:00:00",
+      "losses": 9,
       "position": {
-        "atr_at_signal": 0.7896741690055242,
-        "bars_held": 1,
-        "confidence": 0.709315150976181,
+        "atr_at_signal": 0.7072919466694404,
+        "bars_held": 0,
+        "confidence": 0.7179954349994659,
         "direction": "SELL",
-        "entry_candle_start": "2026-10-24T18:00:00",
-        "entry_price": 100.48999786376953,
-        "entry_time": "2026-10-24T18:03:49+00:00",
+        "entry_candle_start": "2026-10-24T23:00:00",
+        "entry_price": 101.47000122070312,
+        "entry_time": "2026-10-24T23:06:54+00:00",
         "horizon": 4,
-        "prob_down": 0.709315150976181,
-        "prob_up": 0.29068484902381897,
-        "quantity": 85.61818443455196,
-        "risk_amount_quote": 101.4157029676748,
-        "signal_candle_start": "2026-10-24T17:00:00",
-        "signal_time": "2026-10-24T18:00:00",
-        "stop_loss": 101.67450911727782,
-        "take_profit": 98.12097535675296
+        "prob_down": 0.7179954349994659,
+        "prob_up": 0.28200456500053406,
+        "quantity": 94.7184811872606,
+        "risk_amount_quote": 100.49042841676547,
+        "signal_candle_start": "2026-10-24T22:00:00",
+        "signal_time": "2026-10-24T23:00:00",
+        "stop_loss": 102.53093914070729,
+        "take_profit": 99.34812538069481
       },
-      "realized_pnl_quote": 141.570296767478,
+      "realized_pnl_quote": 49.042841676544,
       "starting_balance": 10000.0,
       "wins": 7
     }
   },
   "schema_version": 1,
-  "updated_at_utc": "2026-10-24T20:41:26+00:00"
+  "updated_at_utc": "2026-10-24T23:06:54+00:00"
 }
