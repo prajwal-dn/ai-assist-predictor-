@@ -56,3 +56,4 @@
 {"status":"WAITING_FOR_SECRETS","message":"Add ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET in GitHub Actions secrets; no broker request or order was made.","simulation_only":true}
 {"status":"WAITING_FOR_SECRETS","message":"Add ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET in GitHub Actions secrets; no broker request or order was made.","simulation_only":true}
 {"status":"WAITING_FOR_SECRETS","message":"Add ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET in GitHub Actions secrets; no broker request or order was made.","simulation_only":true}
+{"status":"WAITING_FOR_SECRETS","message":"Add ALPACA_PAPER_API_KEY and ALPACA_PAPER_API_SECRET in GitHub Actions secrets; no broker request or order was made.","simulation_only":true}
