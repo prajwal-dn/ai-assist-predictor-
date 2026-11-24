@@ -3,7 +3,7 @@
     "SOL-USD": {
       "closed_trades": 95,
       "equity": 10022.564940522177,
-      "last_processed_candle": "2026-11-23T20:00:00",
+      "last_processed_candle": "2026-11-24T04:00:00",
       "losses": 48,
       "position": null,
       "realized_pnl_quote": 22.564940522173544,
@@ -12,5 +12,5 @@
     }
   },
   "schema_version": 1,
-  "updated_at_utc": "2026-11-23T21:13:50+00:00"
+  "updated_at_utc": "2026-11-24T05:55:11+00:00"
 }
